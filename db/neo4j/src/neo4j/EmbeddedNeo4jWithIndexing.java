@@ -1,4 +1,5 @@
 package neo4j;
+import java.util.HashMap;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -9,6 +10,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import edu.usc.bg.base.ByteIterator;
 
 public class EmbeddedNeo4jWithIndexing {
 	// private static String DB_PATH =
@@ -157,25 +160,44 @@ public class EmbeddedNeo4jWithIndexing {
 		return Integer.toString(id);
 	}
 
-	public static Node createAndIndexUser(final UserProperties userProperties) {
+//	
+//	public static Node createAndIndexUser(final UserProperties userProperties) {
+//		Node node = graphDb.createNode();
+//				
+//		//index user id
+//		node.setProperty("userid", idToUserName(userProperties.userid));
+//		nodeIndex.add(node, "userid", idToUserName(userProperties.userid));
+//		
+//		node.setProperty("usename", userProperties.username);
+//		node.setProperty("pw", userProperties.pw);
+//		node.setProperty("fname", userProperties.fname);
+//		node.setProperty("lname", userProperties.lname);
+//		node.setProperty("gender", userProperties.gender);
+//		node.setProperty("dob", userProperties.dob);
+//		node.setProperty("jdate", userProperties.jdate);
+//		node.setProperty("ldate", userProperties.ldate);
+//		node.setProperty("address", userProperties.address);
+//		node.setProperty("email", userProperties.email);
+//		node.setProperty("tel", userProperties.tel);
+//		
+//		return node;
+//	}
+	
+	public static Node createAndIndexUser(String entityPK,
+			HashMap<String, ByteIterator> values,  boolean insertImage) {
 		Node node = graphDb.createNode();
 				
 		//index user id
-		node.setProperty("userid", idToUserName(userProperties.userid));
-		nodeIndex.add(node, "userid", idToUserName(userProperties.userid));
+		node.setProperty("userid", entityPK);
+		nodeIndex.add(node, "userid", entityPK);
 		
-		node.setProperty("usename", userProperties.username);
-		node.setProperty("pw", userProperties.pw);
-		node.setProperty("fname", userProperties.fname);
-		node.setProperty("lname", userProperties.lname);
-		node.setProperty("gender", userProperties.gender);
-		node.setProperty("dob", userProperties.dob);
-		node.setProperty("jdate", userProperties.jdate);
-		node.setProperty("ldate", userProperties.ldate);
-		node.setProperty("address", userProperties.address);
-		node.setProperty("email", userProperties.email);
-		node.setProperty("tel", userProperties.tel);
-		
+		for (String k: values.keySet()) {
+			//if there are no images
+			if(!(k.toString().equalsIgnoreCase("pic") || k.toString().equalsIgnoreCase("tpic"))) {
+				node.setProperty(k, values.get(k).toString());
+			}
+		}
+				
 		return node;
 	}
 

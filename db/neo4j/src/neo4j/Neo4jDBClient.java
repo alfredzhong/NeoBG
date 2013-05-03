@@ -60,7 +60,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 
 
-public class Neo4jDBClient extends DB {
+public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	
 	/** The code to return when the call succeeds. **/
 	public static final int SUCCESS = 0;
@@ -70,32 +70,42 @@ public class Neo4jDBClient extends DB {
 	private static String FSimagePath = "";
 	
 	private boolean initialized = false;
-	private boolean verbose = false;
+	
+	
+//	private boolean verbose = false;
 	private Properties props;
-	private Connection conn;
-	private PreparedStatement preparedStatement;
+//	private Connection conn;
+//	private PreparedStatement preparedStatement;
 	/** Statement pool to cache the statements. **/
+	
 	private ConcurrentMap<Integer, PreparedStatement> newCachedStatements;
 	
-	private static final String DEFAULT_PROP = "";
+	private static final String DEFAULT_PROP = "/home/az/course/cs227/graph_databases/graph_test";
 	
-	private static final int GETFRNDCNT_STMT    = 2;
-	private static final int GETPENDCNT_STMT    = 3;
-	private static final int GETRESCNT_STMT     = 4;
-	private static final int GETPROFILE_STMT    = 5;
-	private static final int GETPROFILEIMG_STMT = 6;
-	private static final int GETFRNDS_STMT      = 7;
-	private static final int GETFRNDSIMG_STMT   = 8;
-	private static final int GETPEND_STMT       = 9;
-	private static final int GETPENDIMG_STMT    = 10;
-	private static final int REJREQ_STMT        = 11;
-	private static final int ACCREQ_STMT        = 12;
-	private static final int INVFRND_STMT       = 13;
-	private static final int UNFRNDFRND_STMT    = 14;
-	private static final int GETTOPRES_STMT     = 15;
-	private static final int GETRESCMT_STMT     = 16;
-	private static final int POSTCMT_STMT       = 17;
-	private static final int DELCMT_STMT        = 18;
+//	
+//	private static final int GETFRNDCNT_STMT    = 2;
+//	private static final int GETPENDCNT_STMT    = 3;
+//	private static final int GETRESCNT_STMT     = 4;
+//	private static final int GETPROFILE_STMT    = 5;
+//	private static final int GETPROFILEIMG_STMT = 6;
+//	private static final int GETFRNDS_STMT      = 7;
+//	private static final int GETFRNDSIMG_STMT   = 8;
+//	private static final int GETPEND_STMT       = 9;
+//	private static final int GETPENDIMG_STMT    = 10;
+//	private static final int REJREQ_STMT        = 11;
+//	private static final int ACCREQ_STMT        = 12;
+//	private static final int INVFRND_STMT       = 13;
+//	private static final int UNFRNDFRND_STMT    = 14;
+//	private static final int GETTOPRES_STMT     = 15;
+//	private static final int GETRESCMT_STMT     = 16;
+//	private static final int POSTCMT_STMT       = 17;
+//	private static final int DELCMT_STMT        = 18;
+//	
+	
+	// neo4j client members
+	EmbeddedNeo4jWithIndexing db;
+	
+	
 	
 	public static void main(String[] args) {
 //		TestImage();
@@ -208,144 +218,119 @@ public class Neo4jDBClient extends DB {
 			System.out.println("Client connection already initialized.");
 			return true;
 		}
-		props = getProperties();
-		String urls = props.getProperty(PostgreDBClientConstants.CONNECTION_URL, DEFAULT_PROP);
-		String user = props.getProperty(PostgreDBClientConstants.CONNECTION_USER, DEFAULT_PROP);
-		String passwd = props.getProperty(PostgreDBClientConstants.CONNECTION_PASSWD, DEFAULT_PROP);
-		String driver = props.getProperty(PostgreDBClientConstants.DRIVER_CLASS, DEFAULT_PROP);
+//	
 		
-		FSimagePath   = props.getProperty(PostgreDBClientConstants.FS_PATH, DEFAULT_PROP);
-
-		try {
-			Class.forName(driver);
-			for (String url: urls.split(",")) {
-				conn = DriverManager.getConnection(url, user, passwd);
-				// Since there is no explicit commit method in the DB interface, all
-				// operations should auto commit.
-				conn.setAutoCommit(true);
-			}
-			/** Statement pool initialization. */
-			newCachedStatements = new ConcurrentHashMap<Integer, PreparedStatement>();
-		} catch (ClassNotFoundException e) {
-			System.out.println("Error in initializing the JDBS driver: " + e);
-			e.printStackTrace(System.out);
-			return false;
-		} catch (SQLException e) {
-			System.out.println("Error in database operation: " + e);
-			e.printStackTrace(System.out);
-			return false;
-		} catch (NumberFormatException e) {
-			System.out.println("Invalid value for fieldcount property. " + e);
-			e.printStackTrace(System.out);
-			return false;
-		}
+		props = getProperties();
+		String urls = props.getProperty(Neo4jConstraints.NEO4J_URL_PROPERTY, DEFAULT_PROP);
+		db = new EmbeddedNeo4jWithIndexing(urls); 
+		
 		initialized = true;
 		return true;
 	}
 	
-	private void cleanupAllConnections() {
-		try {
-			// Close all cached prepare statements.
-			Set<Integer> statementTypes = newCachedStatements.keySet();
-			Iterator<Integer> it = statementTypes.iterator();
-			while (it.hasNext()) {
-				int stmtType = it.next();
-				if (newCachedStatements.get(stmtType) != null) newCachedStatements.get(stmtType).close();
-			}
-			if (conn != null) conn.close();
-		} catch (SQLException e) {
-			e.printStackTrace(System.out);
-		}
-	}
 	
 	@Override
 	public void cleanup(boolean warmup) {
-		cleanupAllConnections();
+		db.shutdown();
 	}
 	
-	private PreparedStatement createAndCacheStatement(int stmttype, String query) throws SQLException{
-		PreparedStatement newStatement = conn.prepareStatement(query);
-		PreparedStatement stmt = newCachedStatements.putIfAbsent(stmttype, newStatement);
-		if (stmt == null) return newStatement;
-		else return stmt;
-	}
+//	private PreparedStatement createAndCacheStatement(int stmttype, String query) throws SQLException{
+//		PreparedStatement newStatement = conn.prepareStatement(query);
+//		PreparedStatement stmt = newCachedStatements.putIfAbsent(stmttype, newStatement);
+//		if (stmt == null) return newStatement;
+//		else return stmt;
+//	}
 
 	// Loading phase query will not be cached.
 	@Override
 	public int insertEntity(String entitySet, String entityPK,
 			HashMap<String, ByteIterator> values, boolean insertImage) {
+		
 		if (null == entitySet || null == entityPK)
 			return ERROR;
 		
-		ResultSet rs = null;
-		try {
-			StringBuilder query = new StringBuilder("");
-			int numFields = values.size();
+		if (entitySet.equalsIgnoreCase("users")) {
+			db.createAndIndexUser(entityPK, values, insertImage);
+		} else if (entitySet.equalsIgnoreCase("friendship")) {
 			
-			// Store images into the file system.
-			if (entitySet.equalsIgnoreCase("users") && insertImage && !FSimagePath.equals(""))
-				numFields = numFields - 2;
-			query.append("INSERT INTO " + entitySet + " VALUES (");
-			for (int i = 0; i <= numFields; ++i) {
-				if (i == numFields) {
-					query.append("?)");
-					break;
-				} else
-					query.append("?, ");
-			}
+		} else if (entitySet.equalsIgnoreCase("resources")) {
 			
-			preparedStatement = conn.prepareStatement(query.toString());
-			// The type of primary key is Integer.
-			preparedStatement.setInt(1, Integer.parseInt(entityPK));
-			int cnt = 2;
-			for (Entry<String, ByteIterator> entry : values.entrySet()) {
-				String field = entry.getValue().toString();
-				if (entry.getKey().equalsIgnoreCase("pic") || entry.getKey().equalsIgnoreCase("tpic"))
-					continue;
-				if(entry.getKey().equalsIgnoreCase("creatorid") || entry.getKey().equalsIgnoreCase("walluserid"))
-					preparedStatement.setInt(cnt, Integer.parseInt(field));
-				else
-					preparedStatement.setString(cnt, field);
-				cnt++;
-				
-				if (verbose) {
-					System.out.println("" + entry.getKey().toString() + ":" + field);
-				}
-			}
-			
-			if(entitySet.equalsIgnoreCase("users") && insertImage) {
-				byte[] profileImage = ((ObjectByteIterator)values.get("pic")).toArray();
-				InputStream is = new ByteArrayInputStream(profileImage);
-				if (FSimagePath.equals(""))
-					preparedStatement.setBinaryStream(numFields, is, profileImage.length);
-				else
-					StoreImageInFS(entityPK, profileImage, true);
-				
-				byte[] thumbImage = ((ObjectByteIterator)values.get("tpic")).toArray();
-				is = new ByteArrayInputStream(thumbImage);
-				
-				if (FSimagePath.equals(""))
-					preparedStatement.setBinaryStream(numFields + 1, is, thumbImage.length);
-				else
-					StoreImageInFS(entityPK, thumbImage, false);
-			}
-			preparedStatement.execute();
-		} catch (SQLException e) {
-			System.out.println("Error in processing insert to table: " + entitySet + e);
+		} else {
+			System.err.println("Error in Neo4jDBClient.insertEntity: Invalid entitySet: " + entitySet +", return ERROR.");
 			return ERROR;
-		} finally {
-			try {
-				if (rs != null)
-					rs.close();
-				if(preparedStatement != null)
-					preparedStatement.close();
-			} catch (SQLException e) {
-				e.printStackTrace(System.out);
-				return ERROR;
-			}
 		}
 		
 		return SUCCESS;
+		
+//		ResultSet rs = null;
+//		try {
+//			StringBuilder query = new StringBuilder("");
+//			int numFields = values.size();
+//			
+//			// Store images into the file system.
+//			if (entitySet.equalsIgnoreCase("users") && insertImage && !FSimagePath.equals(""))
+//				numFields = numFields - 2;
+//			query.append("INSERT INTO " + entitySet + " VALUES (");
+//			for (int i = 0; i <= numFields; ++i) {
+//				if (i == numFields) {
+//					query.append("?)");
+//					break;
+//				} else
+//					query.append("?, ");
+//			}
+//			
+//			preparedStatement = conn.prepareStatement(query.toString());
+//			// The type of primary key is Integer.
+//			preparedStatement.setInt(1, Integer.parseInt(entityPK));
+//			int cnt = 2;
+//			for (Entry<String, ByteIterator> entry : values.entrySet()) {
+//				String field = entry.getValue().toString();
+//				if (entry.getKey().equalsIgnoreCase("pic") || entry.getKey().equalsIgnoreCase("tpic"))
+//					continue;
+//				if(entry.getKey().equalsIgnoreCase("creatorid") || entry.getKey().equalsIgnoreCase("walluserid"))
+//					preparedStatement.setInt(cnt, Integer.parseInt(field));
+//				else
+//					preparedStatement.setString(cnt, field);
+//				cnt++;
+//				
+//				if (verbose) {
+//					System.out.println("" + entry.getKey().toString() + ":" + field);
+//				}
+//			}
+//			
+//			if(entitySet.equalsIgnoreCase("users") && insertImage) {
+//				byte[] profileImage = ((ObjectByteIterator)values.get("pic")).toArray();
+//				InputStream is = new ByteArrayInputStream(profileImage);
+//				if (FSimagePath.equals(""))
+//					preparedStatement.setBinaryStream(numFields, is, profileImage.length);
+//				else
+//					StoreImageInFS(entityPK, profileImage, true);
+//				
+//				byte[] thumbImage = ((ObjectByteIterator)values.get("tpic")).toArray();
+//				is = new ByteArrayInputStream(thumbImage);
+//				
+//				if (FSimagePath.equals(""))
+//					preparedStatement.setBinaryStream(numFields + 1, is, thumbImage.length);
+//				else
+//					StoreImageInFS(entityPK, thumbImage, false);
+//			}
+//			preparedStatement.execute();
+//		} catch (SQLException e) {
+//			System.out.println("Error in processing insert to table: " + entitySet + e);
+//			return ERROR;
+//		} finally {
+//			try {
+//				if (rs != null)
+//					rs.close();
+//				if(preparedStatement != null)
+//					preparedStatement.close();
+//			} catch (SQLException e) {
+//				e.printStackTrace(System.out);
+//				return ERROR;
+//			}
+//		}
+		
+		//return SUCCESS;
 	}
 
 	@Override
