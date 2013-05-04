@@ -47,108 +47,108 @@ public class EmbeddedNeo4jWithIndexing {
 	
 	
 
-	public void populate() {
-		if (DB_PATH == null) {
-			System.err
-					.println("Warning: didn't set data path path yet. Exiting...");
-			return;
-		}
-
-		System.out.println("Java runtime maximum memory: "
-				+ Runtime.getRuntime().maxMemory() / 1024 / 1024 + " Mb.");
-
-		// START SNIPPET: startDb
-		//graphDb = new EmbeddedGraphDatabase(DB_PATH);
-
-		//nodeIndex = graphDb.index().forNodes("nodes");
-		
-		// registerShutdownHook();
-		// END SNIPPET: startDb
-
-		// START SNIPPET: addUsers
-		Node userNode = null;
-		Node usersReferenceNode = null;
-
-		// transaction, get a user node, and print number of nodes and relations
-		// in the graph
-		Transaction tx = graphDb.beginTx();
-		try {
-			// if the reference node (like root of a graphDB, has a
-			// USERS_REFERENCE type relation,
-			//
-			// then Get the end node that in the 1st relation from the reference
-			// node
-			//
-			// else, create a user node, make a relation from reference to it.
-			if (graphDb.getReferenceNode().hasRelationship(
-					RelTypes.USERS_REFERENCE)) {
-				Iterator<Relationship> itr = graphDb.getReferenceNode()
-						.getRelationships(RelTypes.USERS_REFERENCE).iterator();
-				usersReferenceNode = itr.next().getEndNode();
-			} else {
-				usersReferenceNode = graphDb.createNode();
-				graphDb.getReferenceNode().createRelationshipTo(
-						usersReferenceNode, RelTypes.USERS_REFERENCE);
-			}
-			printDBSize();
-			printRelationSize();
-			tx.success();
-		} catch (Exception e) {
-			tx.failure();
-		} finally {
-			tx.finish();
-		}
-
-		//
-		// transaction
-		tx = null;
-
-		// for benchmark
-		long t1 = System.currentTimeMillis();
-		for (int i = 0; i < 10; i++) {
-			System.out.println("Java runtime total memory: "
-					+ Runtime.getRuntime().totalMemory() / 1024 / 1024 + "Mb");
-
-			tx = graphDb.beginTx();
-			try {
-				for (int id = 0; id < 10; id++) {
-					userNode = createAndIndexUser(idToUserName(id));
-					usersReferenceNode.createRelationshipTo(userNode,
-							RelTypes.USER);
-					userNode = null;
-				}
-				tx.success();
-			} catch (Exception e) {
-				tx.failure();
-			} finally {
-				tx.finish();
-			}
-
-			tx = null;
-			printDBSize();
-			printRelationSize();
-			System.out.println();
-
-		}
-		// tx = graphDb.beginTx();
-		// Node Node1 = createAndIndexUser(idToUserName(1));
-		// Node Node2 = createAndIndexUser(idToUserName(2));
-		// Node node1=nodeIndex.get(USERNAME_KEY, "user" + 1 +
-		// "@neo4j.org").getSingle();
-		// Node node2=nodeIndex.get(USERNAME_KEY, "user" + 2 +
-		// "@neo4j.org").getSingle();
-		// node1.createRelationshipTo(node2, RelTypes.USER);
-		// tx.success();
-		// tx.finish();
-		// tx=null;
-		// tx.success();
-		// tx.finish();
-		long t2 = System.currentTimeMillis();
-
-		// result
-		System.out.println("It took " + (t2 - t1) + " ms");
-		// shutdown();
-	}
+//	public void populate() {
+//		if (DB_PATH == null) {
+//			System.err
+//					.println("Warning: didn't set data path path yet. Exiting...");
+//			return;
+//		}
+//
+//		System.out.println("Java runtime maximum memory: "
+//				+ Runtime.getRuntime().maxMemory() / 1024 / 1024 + " Mb.");
+//
+//		// START SNIPPET: startDb
+//		//graphDb = new EmbeddedGraphDatabase(DB_PATH);
+//
+//		//nodeIndex = graphDb.index().forNodes("nodes");
+//		
+//		// registerShutdownHook();
+//		// END SNIPPET: startDb
+//
+//		// START SNIPPET: addUsers
+//		Node userNode = null;
+//		Node usersReferenceNode = null;
+//
+//		// transaction, get a user node, and print number of nodes and relations
+//		// in the graph
+//		Transaction tx = graphDb.beginTx();
+//		try {
+//			// if the reference node (like root of a graphDB, has a
+//			// USERS_REFERENCE type relation,
+//			//
+//			// then Get the end node that in the 1st relation from the reference
+//			// node
+//			//
+//			// else, create a user node, make a relation from reference to it.
+//			if (graphDb.getReferenceNode().hasRelationship(
+//					RelTypes.USERS_REFERENCE)) {
+//				Iterator<Relationship> itr = graphDb.getReferenceNode()
+//						.getRelationships(RelTypes.USERS_REFERENCE).iterator();
+//				usersReferenceNode = itr.next().getEndNode();
+//			} else {
+//				usersReferenceNode = graphDb.createNode();
+//				graphDb.getReferenceNode().createRelationshipTo(
+//						usersReferenceNode, RelTypes.USERS_REFERENCE);
+//			}
+//			printDBSize();
+//			printRelationSize();
+//			tx.success();
+//		} catch (Exception e) {
+//			tx.failure();
+//		} finally {
+//			tx.finish();
+//		}
+//
+//		//
+//		// transaction
+//		tx = null;
+//
+//		// for benchmark
+//		long t1 = System.currentTimeMillis();
+//		for (int i = 0; i < 10; i++) {
+//			System.out.println("Java runtime total memory: "
+//					+ Runtime.getRuntime().totalMemory() / 1024 / 1024 + "Mb");
+//
+//			tx = graphDb.beginTx();
+//			try {
+//				for (int id = 0; id < 10; id++) {
+//					userNode = createAndIndexUser(idToUserName(id));
+//					usersReferenceNode.createRelationshipTo(userNode,
+//							RelTypes.USER);
+//					userNode = null;
+//				}
+//				tx.success();
+//			} catch (Exception e) {
+//				tx.failure();
+//			} finally {
+//				tx.finish();
+//			}
+//
+//			tx = null;
+//			printDBSize();
+//			printRelationSize();
+//			System.out.println();
+//
+//		}
+//		// tx = graphDb.beginTx();
+//		// Node Node1 = createAndIndexUser(idToUserName(1));
+//		// Node Node2 = createAndIndexUser(idToUserName(2));
+//		// Node node1=nodeIndex.get(USERNAME_KEY, "user" + 1 +
+//		// "@neo4j.org").getSingle();
+//		// Node node2=nodeIndex.get(USERNAME_KEY, "user" + 2 +
+//		// "@neo4j.org").getSingle();
+//		// node1.createRelationshipTo(node2, RelTypes.USER);
+//		// tx.success();
+//		// tx.finish();
+//		// tx=null;
+//		// tx.success();
+//		// tx.finish();
+//		long t2 = System.currentTimeMillis();
+//
+//		// result
+//		System.out.println("It took " + (t2 - t1) + " ms");
+//		// shutdown();
+//	}
 
 	public void shutdown() {
 		graphDb.shutdown();
@@ -185,17 +185,24 @@ public class EmbeddedNeo4jWithIndexing {
 	
 	public static Node createAndIndexUser(String entityPK,
 			HashMap<String, ByteIterator> values,  boolean insertImage) {
-		Node node = graphDb.createNode();
+		Node node = null;
+		Transaction tx = graphDb.beginTx();
+		try {
+			node = graphDb.createNode();
 				
-		//index user id
-		node.setProperty("userid", entityPK);
-		nodeIndex.add(node, "userid", entityPK);
+			//index user id
+			node.setProperty("userid", entityPK);
+			nodeIndex.add(node, "userid", entityPK);
 		
-		for (String k: values.keySet()) {
-			//if there are no images
-			if(!(k.toString().equalsIgnoreCase("pic") || k.toString().equalsIgnoreCase("tpic"))) {
-				node.setProperty(k, values.get(k).toString());
+			for (String k: values.keySet()) {
+				//if there are no images
+				if(!(k.toString().equalsIgnoreCase("pic") || k.toString().equalsIgnoreCase("tpic"))) {
+					node.setProperty(k, values.get(k).toString());
+				}
 			}
+			tx.success();
+		} finally {
+			tx.finish();
 		}
 				
 		return node;

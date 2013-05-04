@@ -1253,8 +1253,7 @@ public class Client {
 					}
 					System.out.println("Time to create fragments :"+(System.currentTimeMillis()-loadst)+" msecs");
 					
-					System.out.println("" +
-							" dividing users");
+					System.out.println("Done dividing users");
 					loadActiveThread stateThread = new loadActiveThread();
 					stateThread.start();
 

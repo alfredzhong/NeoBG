@@ -22,30 +22,28 @@ import java.util.Properties;
 /**
  * Creates a DB layer by dynamically classloading the specified DB class.
  */
-public class DBFactory
-{
-	public static DB newDB(String dbname, Properties properties) throws UnknownDBException
-      {
-	 ClassLoader classLoader = DBFactory.class.getClassLoader();
+public class DBFactory {
+	public static DB newDB(String dbname, Properties properties)
+			throws UnknownDBException {
+		ClassLoader classLoader = DBFactory.class.getClassLoader();
 
-	 DB ret=null;
+		DB ret = null;
 
-	 try 
-	 {
-	    Class dbclass = classLoader.loadClass(dbname);
-	    //System.out.println("dbclass.getName() = " + dbclass.getName());
-	    
-	    ret=(DB)dbclass.newInstance();
-	 }
-	 catch (Exception e) 
-	 {  
-	    e.printStackTrace(System.out);
-	    return null;
-	 }
-	 
-	 ret.setProperties(properties);
+		try {
+			System.out.println("dbname = " + dbname);
+			Class dbclass = classLoader.loadClass(dbname);
+			
+			// System.out.println("dbclass.getName() = " + dbclass.getName());
 
-	 return new DBWrapper(ret);
-      }
-      
+			ret = (DB) dbclass.newInstance();
+		} catch (Exception e) {
+			e.printStackTrace(System.out);
+			return null;
+		}
+
+		ret.setProperties(properties);
+
+		return new DBWrapper(ret);
+	}
+
 }
