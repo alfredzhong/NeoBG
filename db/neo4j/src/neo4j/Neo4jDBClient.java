@@ -273,6 +273,19 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 			Relationship resource_edge = db.createResource(creatorNode,
 					walluserNode, propertyToSet);
 
+			// add userids index to the edge index resourcesIndex
+			Transaction tx = db.graphDb.beginTx();
+			try {
+				db.resourcesIndex.add(
+						resource_edge,
+						"ids",
+						creatorNode.getProperty("userid") + " "
+								+ walluserNode.getProperty("userid"));
+				tx.success();
+			} finally {
+				tx.finish();
+			}
+
 			// set relation properties, skip creatorid, walluserid
 
 		} else {
@@ -685,6 +698,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	public int acceptFriend(int inviterID, int inviteeID) {
 		int retVal = SUCCESS;
 
+		CreateFriendship(inviterID, inviteeID);
 		// if (inviterID < 0 || inviteeID < 0)
 		// return ERROR;
 		// String query;
@@ -1139,9 +1153,15 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 			// HashMap<String, String>
 			// Relationship resource_edge = db.createRelation(inviter, invitee,
 			// propertyToSet);
-			Relationship resource_edge = inviter.createRelationshipTo(invitee,
+			Relationship friendship_edge = inviter.createRelationshipTo(invitee,
 					RelTypes.FRIENDSHIP);
-			resource_edge.setProperty("status", Integer.toString(2));
+			friendship_edge.setProperty("status", Integer.toString(2));
+
+			db.friendshipIndex.add(
+					friendship_edge,
+					"ids",
+					inviter.getProperty("userid") + " "
+							+ invitee.getProperty("userid"));
 
 			tx.success();
 
