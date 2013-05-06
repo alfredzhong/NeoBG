@@ -700,27 +700,28 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 		int retVal = SUCCESS;
 
 		Transaction tx = db.graphDb.beginTx();
-		try {
-			// find the current friendship relationship between these two nodes
-			IndexHits<Relationship> result = db.friendshipIndex.get("ids",
-					Integer.toString(inviterID) + Integer.toString(inviteeID));
 
-			if (result.size() == 0) {
-				CreateFriendship(inviterID, inviteeID);
-			} else if (result.size() == 1) {
+		// find the current friendship relationship between these two nodes
+		IndexHits<Relationship> result = db.friendshipIndex.get("ids",
+				Integer.toString(inviterID) + Integer.toString(inviteeID));
+
+		if (result.size() == 0) {
+			CreateFriendship(inviterID, inviteeID);
+		} else if (result.size() == 1) {
+			try {
 				for (Relationship r : result) {
 					r.setProperty("status", "2");
 				}
-			} else {
-				System.err
-						.println("Error: in Neo4jDBClient.acceptFriend(...), friendship primary key violation. Exiting...");
-				System.exit(-4);
+				tx.success();
+			} catch (Exception e) {
+				tx.failure();
+			} finally {
+				tx.finish();
 			}
-			tx.success();
-		} catch (Exception e) {
-			tx.failure();
-		} finally {
-			tx.finish();
+		} else {
+			System.err
+					.println("Error: in Neo4jDBClient.acceptFriend(...), friendship primary key violation. Exiting...");
+			System.exit(-4);
 		}
 
 		return retVal;
@@ -765,8 +766,10 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 		// find the current friendship relationship between these two nodes
 		Transaction tx = db.graphDb.beginTx();
 		try {
-			IndexHits<Relationship> result = db.friendshipIndex.get("ids",
-					Integer.toString(inviterID) + " " + Integer.toString(inviteeID));
+			IndexHits<Relationship> result = db.friendshipIndex.get(
+					"ids",
+					Integer.toString(inviterID) + " "
+							+ Integer.toString(inviteeID));
 
 			if (result.size() == 0) {
 				Node inviter = db.nodeIndex.get("userid",
@@ -776,7 +779,8 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 				Relationship f = inviter.createRelationshipTo(invitee,
 						RelTypes.FRIENDSHIP);
 				f.setProperty("status", "1");
-				db.friendshipIndex.add(f, "ids", Integer.toString(inviterID) + " " + Integer.toString(inviteeID));
+				db.friendshipIndex.add(f, "ids", Integer.toString(inviterID)
+						+ " " + Integer.toString(inviteeID));
 			} else if (result.size() == 1) {
 				result.getSingle().setProperty("status", "2");
 			} else {
