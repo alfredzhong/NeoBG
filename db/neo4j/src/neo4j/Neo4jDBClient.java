@@ -1169,7 +1169,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 					"ids",
 					inviter.getProperty("userid") + " "
 							+ invitee.getProperty("userid"));
-
+			
 			tx.success();
 
 		} finally {

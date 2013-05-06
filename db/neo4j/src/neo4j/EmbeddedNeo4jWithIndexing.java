@@ -23,6 +23,7 @@ public class EmbeddedNeo4jWithIndexing {
 	public static Index<Node> nodeIndex = null;
 	public static Index<Relationship> resourcesIndex = null;
 	public static Index<Relationship> friendshipIndex = null;
+	public static Index<Relationship> resourcesCreatorIndex = null;
 
 	// // START SNIPPET: createRelTypes
 	// public static enum RelTypes implements RelationshipType {
@@ -49,6 +50,9 @@ public class EmbeddedNeo4jWithIndexing {
 			nodeIndex = graphDb.index().forNodes("nodes");
 			resourcesIndex = graphDb.index().forRelationships("resources");
 			friendshipIndex = graphDb.index().forRelationships("friendship");
+			resourcesCreatorIndex = graphDb.index().forRelationships(
+					"resourcesCreator");
+
 		}
 	}
 
@@ -231,6 +235,8 @@ public class EmbeddedNeo4jWithIndexing {
 			resourcesIndex.add(resource_edge, "ids", n1.getProperty("userid")
 					+ " " + n2.getProperty("userid"));
 
+			resourcesCreatorIndex.add(resource_edge, "creatorid",
+					resource_edge.getProperty("creatorid"));
 			// resourcesIndex.add(resource_edge, values);
 			tx.success();
 		} finally {
