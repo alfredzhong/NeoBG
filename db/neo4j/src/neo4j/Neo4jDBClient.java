@@ -270,7 +270,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 				}
 			}
 			// create resource
-			Relationship resource_edge = db.createRelation(creatorNode,
+			Relationship resource_edge = db.createResource(creatorNode,
 					walluserNode, propertyToSet);
 
 			// set relation properties, skip creatorid, walluserid

@@ -47,12 +47,10 @@ public class EmbeddedNeo4jWithIndexing {
 	public void setIndex() {
 		if (graphDb != null) {
 			nodeIndex = graphDb.index().forNodes("nodes");
-			resourcesIndex = graphDb.index().forRelationships("resources");			
+			resourcesIndex = graphDb.index().forRelationships("resources");
 			friendshipIndex = graphDb.index().forRelationships("friendship");
-		} 
+		}
 	}
-	
-	
 
 	// public void populate() {
 	// if (DB_PATH == null) {
@@ -217,29 +215,29 @@ public class EmbeddedNeo4jWithIndexing {
 		return node;
 	}
 
-	public static Relationship createRelation(Node n1, Node n2,
+	public static Relationship createResource(Node n1, Node n2,
 			HashMap<String, ByteIterator> values) {
 		Relationship resource_edge = null;
 		Transaction tx = graphDb.beginTx();
 		try {
 			// create resource
 			resource_edge = n1.createRelationshipTo(n2, RelTypes.RESOURCE);
-			
 
 			for (String k : values.keySet()) {
 				// if there are no images
-				resource_edge.setProperty(k, values.get(k).toString());				
+				resource_edge.setProperty(k, values.get(k).toString());
 			}
-			
-			//resourcesIndex.add(resource_edge, values);			
+
+			resourcesIndex.add(resource_edge, "ids", n1.getProperty("userid")
+					+ " " + n2.getProperty("userid"));
+
+			// resourcesIndex.add(resource_edge, values);
 			tx.success();
 		} finally {
 			tx.finish();
 		}
 		return resource_edge;
 	}
-	
-	
 
 	// END SNIPPET: helperMethods
 	/*
