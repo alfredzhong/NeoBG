@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
@@ -36,6 +37,9 @@ import java.util.Vector;
 import edu.usc.bg.base.ByteIterator;
 import edu.usc.bg.base.DB;
 import edu.usc.bg.base.DBException;
+import edu.usc.bg.base.ObjectByteIterator;
+
+import net.sf.ehcache.management.ResourceClassLoader;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -855,47 +859,16 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	public int getCreatedResources(int creatorID,
 			Vector<HashMap<String, ByteIterator>> result) {
 		int retVal = SUCCESS;
-		// ResultSet rs = null;
-		// Statement st = null;
-		//
-		// if (creatorID < 0)
-		// return ERROR;
-		//
-		// String query = "SELECT * FROM resources WHERE creatorid = " +
-		// creatorID;
-		// try {
-		// st = conn.createStatement();
-		// rs = st.executeQuery(query);
-		// while (rs.next()) {
-		// HashMap<String, ByteIterator> values = new HashMap<String,
-		// ByteIterator>();
-		// // Get the number of columns and their names.
-		// ResultSetMetaData md = rs.getMetaData();
-		// int col = md.getColumnCount();
-		// for (int i = 1; i <= col; i++) {
-		// String col_name = md.getColumnName(i);
-		// String value = rs.getString(col_name);
-		// if(col_name.equalsIgnoreCase("rid"))
-		// col_name = "rid";
-		// values.put(col_name, new ObjectByteIterator(value.getBytes()));
-		// }
-		// result.add(values);
-		// }
-		// } catch (SQLException sx) {
-		// retVal = ERROR;
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if (rs != null)
-		// rs.close();
-		// if(st != null)
-		// st.close();
-		// } catch (SQLException e) {
-		// retVal = ERROR;
-		// e.printStackTrace(System.out);
-		// }
-		// }
-
+		IndexHits<Relationship> ret_resources = db.resourcesIndex.get("creatorid", Integer.toString(creatorID));
+		
+		HashMap<String, ByteIterator> m = new HashMap<String, ByteIterator>();
+		for (Relationship r:ret_resources) {
+			m.clear();
+			//Iterator<String> itr = r.getPropertyKeys().iterator();			
+			m.put("rid", new ObjectByteIterator(r.getProperty("rid").toString().getBytes())) ;
+			result.add(m);
+		}
+		
 		return retVal;
 	}
 
