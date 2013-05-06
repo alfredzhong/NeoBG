@@ -240,6 +240,24 @@ public class EmbeddedNeo4jWithIndexing {
 	}
 	
 	
+	public static Relationship createRelation(Node n1, Node n2,
+			String key, String v) {
+		Relationship resource_edge = null;
+		Transaction tx = graphDb.beginTx();
+		try {
+			// create resource
+			resource_edge = n1.createRelationshipTo(n2, RelTypes.RESOURCE);
+			
+			resource_edge.setProperty(key,v);				
+
+			//resourcesIndex.add(resource_edge, values);			
+			tx.success();
+		} finally {
+			tx.finish();
+		}
+		return resource_edge;
+	}
+	
 
 	// END SNIPPET: helperMethods
 	/*
