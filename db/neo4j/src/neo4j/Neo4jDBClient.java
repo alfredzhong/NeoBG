@@ -766,7 +766,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 		Transaction tx = db.graphDb.beginTx();
 		try {
 			IndexHits<Relationship> result = db.friendshipIndex.get("ids",
-					Integer.toString(inviterID) + Integer.toString(inviteeID));
+					Integer.toString(inviterID) + " " + Integer.toString(inviteeID));
 
 			if (result.size() == 0) {
 				Node inviter = db.nodeIndex.get("userid",
@@ -776,6 +776,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 				Relationship f = inviter.createRelationshipTo(invitee,
 						RelTypes.FRIENDSHIP);
 				f.setProperty("status", "1");
+				db.friendshipIndex.add(f, "ids", Integer.toString(inviterID) + " " + Integer.toString(inviteeID));
 			} else if (result.size() == 1) {
 				result.getSingle().setProperty("status", "2");
 			} else {
