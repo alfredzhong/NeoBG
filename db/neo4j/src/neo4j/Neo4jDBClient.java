@@ -39,6 +39,7 @@ import edu.usc.bg.base.DBException;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexHits;
 
@@ -698,32 +699,29 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	public int acceptFriend(int inviterID, int inviteeID) {
 		int retVal = SUCCESS;
 
-		CreateFriendship(inviterID, inviteeID);
-		// if (inviterID < 0 || inviteeID < 0)
-		// return ERROR;
-		// String query;
-		// query =
-		// "UPDATE friendship SET status = 2 WHERE inviterid = ? AND inviteeid = ?";
-		// try {
-		// if ((preparedStatement = newCachedStatements.get(ACCREQ_STMT)) ==
-		// null){
-		// preparedStatement = createAndCacheStatement(ACCREQ_STMT, query);
-		// }
-		// preparedStatement.setInt(1, inviterID);
-		// preparedStatement.setInt(2, inviteeID);
-		// preparedStatement.executeUpdate();
-		// } catch (SQLException sx) {
-		// retVal = ERROR;
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if(preparedStatement != null)
-		// preparedStatement.clearParameters();
-		// } catch (SQLException e) {
-		// retVal = ERROR;
-		// e.printStackTrace(System.out);
-		// }
-		// }
+		Transaction tx = db.graphDb.beginTx();
+		try {
+			// find the current friendship relationship between these two nodes
+			IndexHits<Relationship> result = db.friendshipIndex.get("ids",
+					Integer.toString(inviterID) + Integer.toString(inviteeID));
+
+			if (result.size() == 0) {
+				CreateFriendship(inviterID, inviteeID);
+			} else if (result.size() == 1) {
+				for (Relationship r : result) {
+					r.setProperty("status", "2");
+				}
+			} else {
+				System.err
+						.println("Error: in Neo4jDBClient.acceptFriend(...), friendship primary key violation. Exiting...");
+				System.exit(-4);
+			}
+			tx.success();
+		} catch (Exception e) {
+			tx.failure();
+		} finally {
+			tx.finish();
+		}
 
 		return retVal;
 	}
@@ -764,31 +762,36 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	public int inviteFriend(int inviterID, int inviteeID) {
 		int retVal = SUCCESS;
 
-		// if (inviterID < 0 || inviteeID < 0)
-		// return ERROR;
-		// String query = "INSERT INTO friendship VALUES (?, ?, 1)";
-		//
-		// try {
-		// if ((preparedStatement = newCachedStatements.get(INVFRND_STMT)) ==
-		// null)
-		// preparedStatement = createAndCacheStatement(INVFRND_STMT, query);
-		// preparedStatement.setInt(1, inviterID);
-		// preparedStatement.setInt(2, inviteeID);
-		// preparedStatement.executeUpdate();
-		// } catch (SQLException sx) {
-		// retVal = ERROR;
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if(preparedStatement != null)
-		// preparedStatement.clearParameters();
-		// } catch (SQLException e) {
-		// retVal = ERROR;
-		// e.printStackTrace(System.out);
-		// }
-		// }
+		// find the current friendship relationship between these two nodes
+		Transaction tx = db.graphDb.beginTx();
+		try {
+			IndexHits<Relationship> result = db.friendshipIndex.get("ids",
+					Integer.toString(inviterID) + Integer.toString(inviteeID));
+
+			if (result.size() == 0) {
+				Node inviter = db.nodeIndex.get("userid",
+						Integer.toString(inviterID)).getSingle();
+				Node invitee = db.nodeIndex.get("userid",
+						Integer.toString(inviteeID)).getSingle();
+				Relationship f = inviter.createRelationshipTo(invitee,
+						RelTypes.FRIENDSHIP);
+				f.setProperty("status", "1");
+			} else if (result.size() == 1) {
+				result.getSingle().setProperty("status", "2");
+			} else {
+				System.err
+						.println("Error: in Neo4jDBClient.acceptFriend(...), friendship primary key violation. Exiting...");
+				System.exit(-4);
+			}
+			tx.success();
+		} catch (Exception e) {
+			tx.failure();
+		} finally {
+			tx.finish();
+		}
 
 		return retVal;
+
 	}
 
 	@Override
@@ -1153,8 +1156,8 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 			// HashMap<String, String>
 			// Relationship resource_edge = db.createRelation(inviter, invitee,
 			// propertyToSet);
-			Relationship friendship_edge = inviter.createRelationshipTo(invitee,
-					RelTypes.FRIENDSHIP);
+			Relationship friendship_edge = inviter.createRelationshipTo(
+					invitee, RelTypes.FRIENDSHIP);
 			friendship_edge.setProperty("status", Integer.toString(2));
 
 			db.friendshipIndex.add(
