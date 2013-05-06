@@ -731,30 +731,29 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	public int rejectFriend(int inviterID, int inviteeID) {
 		int retVal = SUCCESS;
 
-		// if (inviterID < 0 || inviteeID < 0)
-		// return ERROR;
-		//
-		// String query =
-		// "DELETE FROM friendship WHERE inviterid = ? AND inviteeid = ? AND status = 1";
-		// try {
-		// if ((preparedStatement = newCachedStatements.get(REJREQ_STMT)) ==
-		// null)
-		// preparedStatement = createAndCacheStatement(REJREQ_STMT, query);
-		// preparedStatement.setInt(1, inviterID);
-		// preparedStatement.setInt(2, inviteeID);
-		// preparedStatement.executeUpdate();
-		// } catch (SQLException sx) {
-		// retVal = ERROR;
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if(preparedStatement != null)
-		// preparedStatement.clearParameters();
-		// } catch (SQLException e) {
-		// retVal = ERROR;
-		// e.printStackTrace(System.out);
-		// }
-		// }
+		Transaction tx = db.graphDb.beginTx();
+		try {
+			IndexHits<Relationship> result = db.friendshipIndex.get(
+					"ids",
+					Integer.toString(inviterID) + " "
+							+ Integer.toString(inviteeID));
+
+			if (result.size() == 0) {
+				return retVal;
+			} else if (result.size() == 1) {
+				result.getSingle().delete();
+			} else {
+				System.err
+						.println("Error: in Neo4jDBClient.acceptFriend(...), friendship primary key violation. Exiting...");
+				System.exit(-4);
+			}
+			tx.success();
+		} catch (Exception e) {
+			tx.failure();
+		} finally {
+			tx.finish();
+		}
+		
 
 		return retVal;
 	}
