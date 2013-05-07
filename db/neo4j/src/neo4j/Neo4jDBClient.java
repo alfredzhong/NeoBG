@@ -38,9 +38,12 @@ import edu.usc.bg.base.ByteIterator;
 import edu.usc.bg.base.DB;
 import edu.usc.bg.base.DBException;
 import edu.usc.bg.base.ObjectByteIterator;
+import edu.usc.bg.workloads.FriendshipWorkload;
 
 import net.sf.ehcache.management.ResourceClassLoader;
 
+import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -701,34 +704,40 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 
 		return retVal;
 	}
-
+	
+	public static String friendKey(int id1, int id2) {
+		return Integer.toString(id1) + " " + Integer.toString(id2);
+	}
+	
 	@Override
 	public int acceptFriend(int inviterID, int inviteeID) {
 		int retVal = SUCCESS;
 
-		Transaction tx = db.graphDb.beginTx();
-
-		// find the current friendship relationship between these two nodes
-		
-
-		if (result.size() == 0) {
-			CreateFriendship(inviterID, inviteeID);
-		} else if (result.size() == 1) {
-			try {
-				for (Relationship r : result) {
-					r.setProperty("status", "2");
-				}
-				tx.success();
-			} catch (Exception e) {
-				tx.failure();
-			} finally {
-				tx.finish();
-			}
-		} else {
-			System.err
-					.println("Error: in Neo4jDBClient.acceptFriend(...), friendship primary key violation. Exiting...");
-			System.exit(-4);
-		}
+//		Transaction tx = db.graphDb.beginTx();
+//
+//		
+//		// find the current friendship relationship between these two nodes
+//		
+//		IndexHits<Relationship> result = db.friendshipIndex.get("ids", friendKey(inviterID, inviteeID));
+//		if (result.size() == 0) {
+//			CreateFriendship(inviterID, inviteeID);
+//		} else if (result.size() == 1) {
+//			try {
+//				for (Relationship r : result) {
+//					r.setProperty("status", "2");
+//				}
+//				tx.success();
+//			} catch (Exception e) {
+//				tx.failure();
+//			} finally {
+//				tx.finish();
+//			}
+//		} else {
+//			System.err
+//					.println("Error: in Neo4jDBClient.acceptFriend(...), friendship primary key violation. Exiting...");
+//			System.exit(-4);
+//		}
+//		
 
 		return retVal;
 	}
@@ -776,56 +785,12 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	@Override
 	public int inviteFriend(int inviterID, int inviteeID) {
 		int retVal = SUCCESS;
-
-/*
-		ExecutionEngine engine = new ExecutionEngine(db.graphDb);
-		ExecutionResult result = engine
-				.execute("START n=node(*) "
-						+ "MATCH (n) -[FRIENDSHIP]->(m) "
-						+ "WHERE HAS(n.userid) AND HAS(m.userid) AND HAS(FRIENDSHIP.status) AND (FRIENDSHIP.status='2') AND "
-						+ "(n.userid = '" + inviterID + "') AND (m.userid='"
-						+ inviteeID + "') return FRIENDSHIP");
-		String checkexist = null;
-		for (Map<String, Object> row : result) {
-			for (Entry<String, Object> col : row.entrySet()) {
-				checkexist = col.getValue().toString();
-			}
-		}
-		if (checkexist == null) {
-			// find the current friendship relationship between these two nodes
-//			Transaction tx = db.graphDb.beginTx();
-//			try {
-//				Node inviter = db.nodeIndex.get("userid",
-//						Integer.toString(inviterID)).getSingle();
-//				Node invitee = db.nodeIndex.get("userid",
-//						Integer.toString(inviteeID)).getSingle();
-//
-//				Relationship fedge = inviter.createRelationshipTo(invitee,
-//						RelTypes.FRIENDSHIP);
-//				db.friendshipIndex.add(
-//						fedge,
-//						"ids",
-//						Integer.toString(inviterID) + " "
-//								+ Integer.toString(inviteeID));
-//			
-//				fedge.setProperty("status", "1");
-//		
-//				tx.success();
-//			} catch (Exception e) {
-//				tx.failure();
-//			} finally {
-//				tx.finish();
-//			}
-		} else {
-			return retVal;
-			*/
 		// find the current friendship relationship between these two nodes
 		Transaction tx = db.graphDb.beginTx();
 		try {
 			IndexHits<Relationship> result = db.friendshipIndex.get(
 					"ids",
-					Integer.toString(inviterID) + " "
-							+ Integer.toString(inviteeID));
+					friendKey(inviterID,inviteeID));
 
 			if (result.size() == 0) {
 				Node inviter = db.nodeIndex.get("userid",
@@ -835,15 +800,8 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 				Relationship f = inviter.createRelationshipTo(invitee,
 						RelTypes.FRIENDSHIP);
 				f.setProperty("status", "1");
-				db.friendshipIndex.add(f, "ids", Integer.toString(inviterID)
-						+ " " + Integer.toString(inviteeID));
-			} else if (result.size() == 1) {
-				result.getSingle().setProperty("status", "2");
-			} else {
-				System.err
-						.println("Error: in Neo4jDBClient.acceptFriend(...), friendship primary key violation. Exiting...");
-				System.exit(-4);
-			}
+				db.friendshipIndex.add(f, "ids", friendKey(inviterID, inviteeID));
+			} 
 			tx.success();
 		} catch (Exception e) {
 			tx.failure();
@@ -852,7 +810,6 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 		}
 
 		return retVal;
-
 	}
 
 	@Override

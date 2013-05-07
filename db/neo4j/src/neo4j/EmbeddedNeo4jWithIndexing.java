@@ -36,17 +36,22 @@ public class EmbeddedNeo4jWithIndexing {
 	public EmbeddedNeo4jWithIndexing(final String db_path) {
 		DB_PATH = db_path;
 		graphDb = new EmbeddedGraphDatabase(DB_PATH);
-	
+		setIndex();
 	}
 
 	public void setDbPath(final String db_path) {
 		DB_PATH = db_path;
 		graphDb = new EmbeddedGraphDatabase(DB_PATH);
-		
+		setIndex();
 	}
 
 	
-
+	public static void setIndex() {
+		nodeIndex = graphDb.index().forNodes("users_index");
+		resourcesIndex = graphDb.index().forRelationships("resources_index");
+		friendshipIndex = graphDb.index().forRelationships("friendship_index");
+		resourcesCreatorIndex = graphDb.index().forRelationships("resources_creator_index");
+	}
 	// public void populate() {
 	// if (DB_PATH == null) {
 	// System.err
@@ -193,6 +198,7 @@ public class EmbeddedNeo4jWithIndexing {
 
 			// index user id
 			node.setProperty("userid", entityPK);
+			
 			nodeIndex.add(node, "userid", entityPK);
 
 			for (String k : values.keySet()) {
