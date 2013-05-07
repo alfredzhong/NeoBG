@@ -444,40 +444,27 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	@Override
 	public int acceptFriend(int inviterID, int inviteeID) {
 		int retVal = SUCCESS;
-
-		// Transaction tx = db.graphDb.beginTx();
-		//
-		//
-		// // find the current friendship relationship between these two nodes
-		//
-		// IndexHits<Relationship> result = db.friendshipIndex.get("ids",
-		// friendKey(inviterID, inviteeID));
-		// if (result.size() == 0) {
-		// CreateFriendship(inviterID, inviteeID);
-		// } else if (result.size() == 1) {
-		// try {
-		// for (Relationship r : result) {
-		// r.setProperty("status", "2");
-		// }
-		// tx.success();
-		// } catch (Exception e) {
-		// tx.failure();
-		// } finally {
-		// tx.finish();
-		// }
-		// } else {
-		// System.err
-		// .println("Error: in Neo4jDBClient.acceptFriend(...), friendship primary key violation. Exiting...");
-		// System.exit(-4);
-		// }
-		//
-
+		ExecutionEngine engine = new ExecutionEngine(db.graphDb);
+		engine.execute("START n=node(*), m = node(*) MATCH (n)-[FRIENDSHIP]->(m) WHERE "
+				+ "HAS(FRIENDSHIP.status) AND HAS(n.userid) AND HAS(m.userid) AND (n.userid = '"
+				+ inviterID
+				+ "') "
+				+ "AND (m.userid='"
+				+ inviteeID
+				+ "') SET FRIENDSHIP.status='2'");
 		return retVal;
 	}
 
 	@Override
 	public int rejectFriend(int inviterID, int inviteeID) {
+
 		int retVal = SUCCESS;
+		ExecutionEngine engine = new ExecutionEngine(db.graphDb);
+		engine.execute("START n=node(*) MATCH (n)-[FRIENDSHIP]->(m) "
+				+ "WHERE HAS(n.userid) AND HAS(m.userid) AND HAS(FRIENDSHIP.status) AND FRIENDSHIP.status='1' "
+				+ "AND (n.userid='" + inviterID + "') AND (m.userid='"
+				+ inviteeID + "') DELETE FRIENDSHIP");
+		return retVal;
 
 		/*
 		 * ExecutionEngine engine = new ExecutionEngine(db.graphDb);
@@ -487,31 +474,19 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 		 * + "(n.userid='" + inviterID + "') AND (m.userid='" + inviteeID +
 		 * "') DELETE FRIENDSHIP");
 		 */
-
-		Transaction tx = db.graphDb.beginTx();
-		try {
-			IndexHits<Relationship> result = db.friendshipIndex.get(
-					"ids",
-					Integer.toString(inviterID) + " "
-							+ Integer.toString(inviteeID));
-
-			if (result.size() == 0) {
-				return retVal;
-			} else if (result.size() == 1) {
-				result.getSingle().delete();
-			} else {
-				System.err
-						.println("Error: in Neo4jDBClient.acceptFriend(...), friendship primary key violation. Exiting...");
-				System.exit(-4);
-			}
-			tx.success();
-		} catch (Exception e) {
-			tx.failure();
-		} finally {
-			tx.finish();
-		}
-
-		return retVal;
+		/*
+		 * Transaction tx = db.graphDb.beginTx(); try { IndexHits<Relationship>
+		 * result = db.friendshipIndex.get( "ids", Integer.toString(inviterID) +
+		 * " " + Integer.toString(inviteeID));
+		 * 
+		 * if (result.size() == 0) { return retVal; } else if (result.size() ==
+		 * 1) { result.getSingle().delete(); } else { System.err .println(
+		 * "Error: in Neo4jDBClient.acceptFriend(...), friendship primary key violation. Exiting..."
+		 * ); System.exit(-4); } tx.success(); } catch (Exception e) {
+		 * tx.failure(); } finally { tx.finish(); }
+		 * 
+		 * return retVal;
+		 */
 	}
 
 	@Override
@@ -556,53 +531,25 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	public int viewTopKResources(int requesterID, int profileOwnerID, int k,
 			Vector<HashMap<String, ByteIterator>> result) {
 		int retVal = SUCCESS;
-		// ResultSet rs = null;
-		//
-		// if (profileOwnerID < 0 || requesterID < 0 || k < 0)
-		// return ERROR;
-		//
-		// String query =
-		// "SELECT * FROM resources WHERE walluserid = ? ORDER BY rid DESC LIMIT ?";
-		// try {
-		// if ((preparedStatement = newCachedStatements.get(GETTOPRES_STMT)) ==
-		// null)
-		// preparedStatement = createAndCacheStatement(GETTOPRES_STMT, query);
-		// preparedStatement.setInt(1, profileOwnerID);
-		// preparedStatement.setInt(2, (k+1));
-		// rs = preparedStatement.executeQuery();
-		// while (rs.next()) {
-		// HashMap<String, ByteIterator> values = new HashMap<String,
-		// ByteIterator>();
-		// // Get the number of columns and their names.
-		// ResultSetMetaData md = rs.getMetaData();
-		// int col = md.getColumnCount();
-		// for (int i = 1; i <= col; i++) {
-		// String col_name = md.getColumnName(i);
-		// String value = rs.getString(col_name);
-		// if(col_name.equalsIgnoreCase("rid"))
-		// col_name = "rid";
-		// else if(col_name.equalsIgnoreCase("walluserid"))
-		// col_name = "walluserid";
-		// values.put(col_name, new ObjectByteIterator(value.getBytes()));
-		// }
-		// result.add(values);
-		// }
-		// } catch (SQLException sx) {
-		// retVal = ERROR;
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if (rs != null)
-		// rs.close();
-		// if(preparedStatement != null)
-		// preparedStatement.clearParameters();
-		// } catch (SQLException e) {
-		// retVal = ERROR;
-		// e.printStackTrace(System.out);
-		// }
-		// }
+        HashMap<String, ByteIterator> values = new HashMap<String, ByteIterator>();
 
-		return retVal;
+        ExecutionEngine engine = new ExecutionEngine(db.graphDb);
+        ExecutionResult ret = engine.execute("START n=node(*) MATCH (n)-[RESOURCE]-(m) WHERE " +
+                "HAS(RESOURCE.walluserid) AND (RESOURCE.walluserid='"+profileOwnerID+"') " +
+                "WITH RESOURCE ORDER BY RESOURCE.rid desc LIMIT " + k + " return RESOURCE.rid, RESOURCE.creatorid, " +
+                "RESOURCE.walluserid, RESOURCE.type, RESOURCE.body, RESOURCE.doc");
+
+        for ( Map<String, Object> row : ret ) {
+            for ( Entry<String, Object> col : row.entrySet() ) {
+                if(col.getKey().equalsIgnoreCase("RESOURCE.rid")) {
+                    values.put("rid", new ObjectByteIterator(col.getValue().toString().getBytes()));
+                } else if (col.getKey().equalsIgnoreCase("RESOURCE.walluserid")) {
+                    values.put("walluserid", new ObjectByteIterator(col.getValue().toString().getBytes()));
+                }
+            }
+        }
+        result.add(values);
+        return retVal;
 	}
 
 	@Override
