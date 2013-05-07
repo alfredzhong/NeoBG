@@ -30,6 +30,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
@@ -1054,69 +1056,70 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	@Override
 	public HashMap<String, String> getInitialStats() {
 		HashMap<String, String> stats = new HashMap<String, String>();
-		// Statement st = null;
-		// ResultSet rs = null;
-		// String query = "";
-		//
-		// try {
-		// st = conn.createStatement();
-		// // Get user count.
-		// query = "SELECT count(*) FROM users";
-		// rs = st.executeQuery(query);
-		// if (rs.next()) {
-		// stats.put("usercount", rs.getString(1));
-		// } else
-		// stats.put("usercount", "0");
-		// if (rs != null ) rs.close();
-		//
-		// // Get user offset.
-		// query = "SELECT min(userid) FROM users";
-		// rs = st.executeQuery(query);
-		// String offset = "0";
-		// if (rs.next()) {
-		// offset = rs.getString(1);
-		// }
-		//
-		// // Get resources per user.
-		// query = "SELECT count(*) FROM resources WHERE creatorid = " +
-		// Integer.parseInt(offset);
-		// rs = st.executeQuery(query);
-		// if (rs.next()) {
-		// stats.put("resourcesperuser", rs.getString(1));
-		// } else {
-		// stats.put("resourcesperuser", "0");
-		// }
-		// if(rs != null) rs.close();
-		//
-		// // Get number of friends per user.
-		// query = "SELECT count(*) FROM friendship WHERE (inviterid = " +
-		// Integer.parseInt(offset) + " OR inviteeid = " +
-		// Integer.parseInt(offset) +") AND status = 2";
-		// rs = st.executeQuery(query);
-		// if (rs.next()) {
-		// stats.put("avgfriendsperuser", rs.getString(1));
-		// } else
-		// stats.put("avgfriendsperuser", "0");
-		// if (rs != null) rs.close();
-		// query = "SELECT count(*) FROM friendship WHERE (inviteeid = " +
-		// Integer.parseInt(offset) + ") AND status = 1";
-		// rs = st.executeQuery(query);
-		// if (rs.next()) {
-		// stats.put("avgpendingperuser", rs.getString(1));
-		// } else
-		// stats.put("avgpendingperuser", "0");
-		// } catch (SQLException sx) {
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if(rs != null)
-		// rs.close();
-		// if(st != null)
-		// st.close();
-		// } catch (SQLException e) {
-		// e.printStackTrace(System.out);
-		// }
-		// }
+
+		stats.put("usercount", Integer.toString(db.size() - 1));
+
+		String offset = "0";
+
+		// String offset = Integer.toString(db.min_userid);
+		ExecutionEngine engine = new ExecutionEngine(db.graphDb);
+		ExecutionResult result = engine
+				.execute("START n=node(*) MATCH (n)-[RESOURCE]->(m) "
+						+ "WHERE HAS(n.userid) AND HAS(RESOURCE.rid) AND (n.userid='"
+						+ offset + "') return COUNT(RESOURCE.rid)");
+		String resourcesperuser = null;
+		for (Map<String, Object> row : result) {
+			for (Entry<String, Object> col : row.entrySet()) {
+				resourcesperuser = col.getValue().toString();
+			}
+		}
+		if (resourcesperuser == null) {
+			stats.put("resourcesperuser", "0");
+		} else {
+			stats.put("resourcesperuser", resourcesperuser);
+		}
+
+		result = engine
+				.execute("start n=node(*) match (n)-[FRIENDSHIP]-(m) "
+						+ "where has(n.userid) AND has(FRIENDSHIP.status) and n.userid='"
+						+ offset
+						+ "' AND FRIENDSHIP.status='2' return COUNT(FRIENDSHIP)");
+		String avgfriendsperuser = null;
+		for (Map<String, Object> row : result) {
+
+			for (Entry<String, Object> col : row.entrySet()) {
+				avgfriendsperuser = col.getValue().toString();
+				// System.out.println("11111111111111111111111111111111111111111 "
+				// + avgfriendsperuser);
+			}
+		}
+
+		if (avgfriendsperuser == null) {
+			stats.put("avgfriendsperuser", "0");
+		} else {
+			stats.put("avgfriendsperuser", avgfriendsperuser);
+		}
+
+		result = engine
+				.execute("start n=node(*) match (n)-[FRIENDSHIP]->(m) "
+						+ "where has(m.userid) AND has(FRIENDSHIP.status) and m.userid='"
+						+ offset
+						+ "' AND FRIENDSHIP.status='1' return COUNT(FRIENDSHIP)");
+		String avgpendingperuser = null;
+		for (Map<String, Object> row : result) {
+
+			for (Entry<String, Object> col : row.entrySet()) {
+				avgpendingperuser = col.getValue().toString();
+				// System.out.println("11111111111111111111111111111111111111111 "
+				// + avgpendingperuser);
+			}
+		}
+
+		if (avgpendingperuser == null) {
+			stats.put("avgpendingperuser", "0");
+		} else {
+			stats.put("avgpendingperuser", avgpendingperuser);
+		}
 
 		return stats;
 	}
