@@ -381,23 +381,31 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 			boolean insertImage, boolean testMode) {
 		int retVal = SUCCESS;
 
-        ExecutionEngine engine = new ExecutionEngine(db.graphDb);
-        ExecutionResult ret = engine.execute("START n=node(*) match (n)-[FRIENDSHIP]-(m) WHERE " +
+		ExecutionEngine engine = new ExecutionEngine(db.graphDb);
+		ExecutionResult ret = engine
+				.execute("START n=node(*) match (n)-[FRIENDSHIP]-(m) WHERE "
+						+
 
-                "HAS(n.userid) AND HAS(m.userid) AND HAS(FRIENDSHIP.status) AND " +
-                "((n.userid='"+profileOwnerID+"') OR (m.userid='"+profileOwnerID+"')) AND FRIENDSHIP.status='2' " +
+						"HAS(n.userid) AND HAS(m.userid) AND HAS(FRIENDSHIP.status) AND "
+						+ "((n.userid='"
+						+ profileOwnerID
+						+ "') OR (m.userid='"
+						+ profileOwnerID
+						+ "')) AND FRIENDSHIP.status='2' "
+						+
 
-                "RETURN n.userid AS userid, m.userid AS invitee, " +
-                "n.username, n.fname, n.lname,n.gender,n.dob,n.jdate,n.ldate,n.address,n.email,n.tel");
-        HashMap<String, ByteIterator> m  = new HashMap<String, ByteIterator>();
-        for ( Map<String, Object> row : ret ) {
-            for ( Entry<String, Object> col : row.entrySet() ) {
-               if (col.getKey().equalsIgnoreCase("userid"))
-                   m.put("userid", new ObjectByteIterator(col.getValue().toString().getBytes()));
-            }
-        }
-        result.add(m);
-        return retVal;
+						"RETURN n.userid AS userid, m.userid AS invitee, "
+						+ "n.username, n.fname, n.lname,n.gender,n.dob,n.jdate,n.ldate,n.address,n.email,n.tel");
+		HashMap<String, ByteIterator> m = new HashMap<String, ByteIterator>();
+		for (Map<String, Object> row : ret) {
+			for (Entry<String, Object> col : row.entrySet()) {
+				if (col.getKey().equalsIgnoreCase("userid"))
+					m.put("userid", new ObjectByteIterator(col.getValue()
+							.toString().getBytes()));
+			}
+		}
+		result.add(m);
+		return retVal;
 	}
 
 	@Override
@@ -405,95 +413,27 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 			Vector<HashMap<String, ByteIterator>> results, boolean insertImage,
 			boolean testMode) {
 		int retVal = SUCCESS;
-		// ResultSet rs = null;
-		// if (profileOwnerID < 0)
-		// return ERROR;
-		//
-		// String query = "";
-		// String uid = "";
-		// try {
-		// if (insertImage && FSimagePath.equals("")) {
-		// query =
-		// "SELECT userid, inviterid, inviteeid, username, fname, lname, gender, dob, jdate, ldate, address, email, tel, tpic FROM users, friendship WHERE inviteeid = ? AND status = 1 AND inviterid = userid";
-		// if ((preparedStatement = newCachedStatements.get(GETPENDIMG_STMT)) ==
-		// null)
-		// preparedStatement = createAndCacheStatement(GETPENDIMG_STMT, query);
-		// } else {
-		// query =
-		// "SELECT userid, inviterid, inviteeid, username, fname, lname, gender, dob, jdate, ldate, address, email, tel FROM users, friendship WHERE inviteeid = ? AND status = 1 AND inviterid = userid";
-		// if ((preparedStatement = newCachedStatements.get(GETPEND_STMT)) ==
-		// null)
-		// preparedStatement = createAndCacheStatement(GETPEND_STMT, query);
-		// }
-		// preparedStatement.setInt(1, profileOwnerID);
-		// rs = preparedStatement.executeQuery();
-		// int cnt = 0;
-		// while (rs.next()) {
-		// cnt++;
-		// HashMap<String, ByteIterator> values = new HashMap<String,
-		// ByteIterator>();
-		// // Get the number of columns and their names.
-		// ResultSetMetaData md = rs.getMetaData();
-		// int col = md.getColumnCount();
-		// for (int i = 1; i <= col; i++) {
-		// String col_name = md.getColumnName(i);
-		// String value = "";
-		// if (col_name.equalsIgnoreCase("tpic")) {
-		// // Get as a bytes.
-		// byte[] bytes = rs.getBytes(i);
-		// value = bytes.toString();
-		// if (testMode) {
-		// // Dump to file.
-		// try {
-		// FileOutputStream fos = new FileOutputStream(profileOwnerID + "-" +
-		// cnt + "-thumbimage.bmp");
-		// fos.write(bytes);
-		// fos.close();
-		// } catch(Exception ex) {
-		// }
-		// }
-		// } else {
-		// value = rs.getString(col_name);
-		// if (col_name.equalsIgnoreCase("userid")) {
-		// uid = value;
-		// col_name = "userid";
-		// }
-		// }
-		// values.put(col_name, new ObjectByteIterator(value.getBytes()));
-		// }
-		// // Fetch the thumbnail image from the file system.
-		// if (insertImage && !FSimagePath.equals("") ){
-		// byte[] thumbImage = GetImageFromFS(uid, false);
-		// // Get the thumbnail image from the file.
-		// if (testMode) {
-		// // Dump to file.
-		// try {
-		// FileOutputStream fos = new FileOutputStream(profileOwnerID + "-" +
-		// cnt + "-thumbimage.bmp");
-		// fos.write(thumbImage);
-		// fos.close();
-		// } catch(Exception ex) {
-		// }
-		// }
-		// values.put("tpic", new ObjectByteIterator(thumbImage));
-		// }
-		// results.add(values);
-		// }
-		// } catch (SQLException sx) {
-		// retVal = ERROR;
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if (rs != null)
-		// rs.close();
-		// if(preparedStatement != null)
-		// preparedStatement.clearParameters();
-		// } catch (SQLException e) {
-		// retVal = ERROR;
-		// e.printStackTrace(System.out);
-		// }
-		// }
+		ExecutionEngine engine = new ExecutionEngine(db.graphDb);
+		ExecutionResult result = engine
+				.execute("START n=node(*) match (n)-[FRIENDSHIP]->(m) WHERE "
+						+ "HAS(m.userid) AND HAS(FRIENDSHIP.status) AND "
+						+ "(m.userid = '"
+						+ profileOwnerID
+						+ "') AND FRIENDSHIP.status='1' RETURN n.userid AS userid, m.userid AS invitee,"
+						+
 
+						"n.username, n.fname, n.lname,n.gender,n.dob,n.jdate,n.ldate,n.address,n.email,n.tel");
+
+		HashMap<String, ByteIterator> m = new HashMap<String, ByteIterator>();
+		for (Map<String, Object> row : result) {
+
+			for (Entry<String, Object> col : row.entrySet()) {
+				if (col.getKey().equalsIgnoreCase("userid"))
+					m.put("userid", new ObjectByteIterator(col.getValue()
+							.toString().getBytes()));
+			}
+		}
+		results.add(m);
 		return retVal;
 	}
 
