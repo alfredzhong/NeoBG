@@ -270,4 +270,15 @@ public class EmbeddedNeo4jWithIndexing {
 		}
 		System.out.println("Size of Relationships (number of edges): " + count);
 	}
+	
+	public static int size() {
+		GlobalGraphOperations g = GlobalGraphOperations.at(graphDb);
+		Iterator<Node> itr = g.getAllNodes().iterator();
+		int count = 0;
+		while (itr.hasNext()) {
+			itr.next();
+			count++;
+		}
+		return count;
+	}
 }
