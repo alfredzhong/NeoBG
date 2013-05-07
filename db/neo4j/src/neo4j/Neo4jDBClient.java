@@ -556,19 +556,21 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	public int getCreatedResources(int creatorID,
 			Vector<HashMap<String, ByteIterator>> result) {
 		int retVal = SUCCESS;
-		IndexHits<Relationship> ret_resources = db.resourcesIndex.get(
-				"creatorid", Integer.toString(creatorID));
+        HashMap<String, ByteIterator> values = new HashMap<String, ByteIterator>();
+        ExecutionEngine engine = new ExecutionEngine(db.graphDb);
+        ExecutionResult ret = engine.execute("START n=node(*) MATCH (n)-[RESOURCE]-(m) WHERE " +
+                "HAS(RESOURCE.creatorid) AND (RESOURCE.creatorid='"+creatorID+"') RETURN RESOURCE.rid AS rid, RESOURCE.creatorid, " +
 
-		HashMap<String, ByteIterator> m = new HashMap<String, ByteIterator>();
-		for (Relationship r : ret_resources) {
-			m.clear();
-			// Iterator<String> itr = r.getPropertyKeys().iterator();
-			m.put("rid", new ObjectByteIterator(r.getProperty("rid").toString()
-					.getBytes()));
-			result.add(m);
-		}
+                "RESOURCE.walluserid, RESOURCE.type, RESOURCE.body, RESOURCE.doc");
+        for ( Map<String, Object> row : ret ) {
+            for ( Entry<String, Object> col : row.entrySet() ) {
+                if(col.getKey().equalsIgnoreCase("rid"))
 
-		return retVal;
+                    values.put("rid", new ObjectByteIterator(col.getValue().toString().getBytes()));
+            }
+        }
+        result.add(values);
+        return retVal;
 	}
 
 	@Override
