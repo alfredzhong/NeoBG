@@ -787,14 +787,24 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	@Override
 	public int inviteFriend(int inviterID, int inviteeID) {
 		int retVal = SUCCESS;
+		
+		if (inviterID==inviteeID) {
+			return retVal;
+		}
+		
 		// find the current friendship relationship between these two nodes
 		Transaction tx = db.graphDb.beginTx();
 		try {
 			IndexHits<Relationship> result = db.friendshipIndex.get(
 					"ids",
 					friendKey(inviterID,inviteeID));
-
-			if (result.size() == 0) {
+			
+			IndexHits<Relationship> result2 = db.friendshipIndex.get(
+					"ids",
+					friendKey(inviteeID,inviterID));
+			
+			
+			if (result.size() == 0 && result2.size() == 0) {
 				Node inviter = db.nodeIndex.get("userid",
 						Integer.toString(inviterID)).getSingle();
 				Node invitee = db.nodeIndex.get("userid",
