@@ -30,11 +30,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
-import java.util.Map.Entry;
 
 import edu.usc.bg.base.ByteIterator;
 import edu.usc.bg.base.DB;
@@ -43,8 +41,6 @@ import edu.usc.bg.base.ObjectByteIterator;
 
 import net.sf.ehcache.management.ResourceClassLoader;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -272,26 +268,27 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 
 			Node walluserNode = result.iterator().next();
 
-			//
-			// HashMap<String, ByteIterator> propertyToSet = new HashMap<String,
-			// ByteIterator>();
-			// for (String k : values.keySet()) {
-			// if ((!k.equals("creatorid")) && (!k.equals("walluserid"))) {
-			// propertyToSet.put(k, values.get(k));
-			// }
-			// }
+			HashMap<String, ByteIterator> propertyToSet = new HashMap<String, ByteIterator>();
+			for (String k : values.keySet()) {
+				if ((!k.equals("creatorid")) && (!k.equals("walluserid"))) {
+					propertyToSet.put(k, values.get(k));
+				}
+			}
 			// create resource
-			// Relationship resource_edge = db.createResource(creatorNode,
-			// walluserNode, propertyToSet);
-
 			Relationship resource_edge = db.createResource(creatorNode,
-					walluserNode, values);
+					walluserNode, propertyToSet);
+
 			// add userids index to the edge index resourcesIndex
 			Transaction tx = db.graphDb.beginTx();
 			try {
 				resource_edge.setProperty("rid", entityPK);
 
 			
+				db.resourcesIndex.add(
+						resource_edge,
+						"ids",
+						creatorNode.getProperty("userid") + " "
+								+ walluserNode.getProperty("userid"));
 				tx.success();
 			} finally {
 				tx.finish();
@@ -740,13 +737,37 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	public int rejectFriend(int inviterID, int inviteeID) {
 		int retVal = SUCCESS;
 
+/*
 		ExecutionEngine engine = new ExecutionEngine(db.graphDb);
 		ExecutionResult result = engine
 				.execute("START n=node(*) MATCH (n) -[FRIENDSHIP]->(m) "
 						+ "WHERE HAS(FRIENDSHIP.status) AND HAS(n.userid) AND HAS(m.userid) AND (FRIENDSHIP.status='1') AND "
 						+ "(n.userid='" + inviterID + "') AND (m.userid='"
 						+ inviteeID + "') DELETE FRIENDSHIP");
+						*/
 
+		Transaction tx = db.graphDb.beginTx();
+		try {
+			IndexHits<Relationship> result = db.friendshipIndex.get(
+					"ids",
+					Integer.toString(inviterID) + " "
+							+ Integer.toString(inviteeID));
+
+			if (result.size() == 0) {
+				return retVal;
+			} else if (result.size() == 1) {
+				result.getSingle().delete();
+			} else {
+				System.err
+						.println("Error: in Neo4jDBClient.acceptFriend(...), friendship primary key violation. Exiting...");
+				System.exit(-4);
+			}
+			tx.success();
+		} catch (Exception e) {
+			tx.failure();
+		} finally {
+			tx.finish();
+		}
 		
 
 		return retVal;
@@ -756,6 +777,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	public int inviteFriend(int inviterID, int inviteeID) {
 		int retVal = SUCCESS;
 
+/*
 		ExecutionEngine engine = new ExecutionEngine(db.graphDb);
 		ExecutionResult result = engine
 				.execute("START n=node(*) "
@@ -796,6 +818,37 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 //			}
 		} else {
 			return retVal;
+			*/
+		// find the current friendship relationship between these two nodes
+		Transaction tx = db.graphDb.beginTx();
+		try {
+			IndexHits<Relationship> result = db.friendshipIndex.get(
+					"ids",
+					Integer.toString(inviterID) + " "
+							+ Integer.toString(inviteeID));
+
+			if (result.size() == 0) {
+				Node inviter = db.nodeIndex.get("userid",
+						Integer.toString(inviterID)).getSingle();
+				Node invitee = db.nodeIndex.get("userid",
+						Integer.toString(inviteeID)).getSingle();
+				Relationship f = inviter.createRelationshipTo(invitee,
+						RelTypes.FRIENDSHIP);
+				f.setProperty("status", "1");
+				db.friendshipIndex.add(f, "ids", Integer.toString(inviterID)
+						+ " " + Integer.toString(inviteeID));
+			} else if (result.size() == 1) {
+				result.getSingle().setProperty("status", "2");
+			} else {
+				System.err
+						.println("Error: in Neo4jDBClient.acceptFriend(...), friendship primary key violation. Exiting...");
+				System.exit(-4);
+			}
+			tx.success();
+		} catch (Exception e) {
+			tx.failure();
+		} finally {
+			tx.finish();
 		}
 
 		return retVal;
@@ -859,19 +912,16 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	public int getCreatedResources(int creatorID,
 			Vector<HashMap<String, ByteIterator>> result) {
 		int retVal = SUCCESS;
+		IndexHits<Relationship> ret_resources = db.resourcesIndex.get("creatorid", Integer.toString(creatorID));
 		
-//		IndexHits<Relationship> ret_resources = db.resourcesIndex.get(
-//				"creatorid", Integer.toString(creatorID));
-//
-//		HashMap<String, ByteIterator> m = new HashMap<String, ByteIterator>();
-//		for (Relationship r : ret_resources) {
-//			m.clear();
-//			// Iterator<String> itr = r.getPropertyKeys().iterator();
-//			m.put("rid", new ObjectByteIterator(r.getProperty("rid").toString()
-//					.getBytes()));
-//			result.add(m);
-//		}
-
+		HashMap<String, ByteIterator> m = new HashMap<String, ByteIterator>();
+		for (Relationship r:ret_resources) {
+			m.clear();
+			//Iterator<String> itr = r.getPropertyKeys().iterator();			
+			m.put("rid", new ObjectByteIterator(r.getProperty("rid").toString().getBytes())) ;
+			result.add(m);
+		}
+		
 		return retVal;
 	}
 
@@ -995,11 +1045,6 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 
 		return retVal;
 	}
-	
-	String friendshipKey(int id1, int id2) {
-		String s = Integer.toString(id1) + " " + Integer.toString(id2);
-		return s;
-	}
 
 	@Override
 	public int thawFriendship(int friendid1, int friendid2) {
@@ -1008,13 +1053,13 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 		//Remove index first
 		//db.friendshipIndex.remove(db.friendshipIndex.get("ids", friendshipKey(friendid1, friendid2) ).getSingle());
 		
-		ExecutionEngine engine = new ExecutionEngine(db.graphDb);
-		ExecutionResult result = engine
-				.execute("START n=node(*) MATCH (n) -[FRIENDSHIP]-(m) "
-						+ "WHERE HAS(n.userid) AND HAS(m.userid) AND HAS(FRIENDSHIP.status) "
-						+ "AND (FRIENDSHIP.status='2') AND " + "(n.userid='"
-						+ friendid1 + "') AND (m.userid='" + friendid2
-						+ "') DELETE FRIENDSHIP");
+		//ExecutionEngine engine = new ExecutionEngine(db.graphDb);
+		//ExecutionResult result = engine
+		//		.execute("START n=node(*) MATCH (n) -[FRIENDSHIP]-(m) "
+		//				+ "WHERE HAS(n.userid) AND HAS(m.userid) AND HAS(FRIENDSHIP.status) "
+		//				+ "AND (FRIENDSHIP.status='2') AND " + "(n.userid='"
+		//				+ friendid1 + "') AND (m.userid='" + friendid2
+		//				+ "') DELETE FRIENDSHIP");
 		
 		//db.friendshipIndex.get("ids", friendshipKey(friendid1, friendid2) ).getSingle()
 		
@@ -1052,124 +1097,52 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	@Override
 	public HashMap<String, String> getInitialStats() {
 		HashMap<String, String> stats = new HashMap<String, String>();
-
-		stats.put("usercount", Integer.toString(db.size() - 1));
-
-		String offset = "0";
-
-		// String offset = Integer.toString(db.min_userid);
-		ExecutionEngine engine = new ExecutionEngine(db.graphDb);
-		ExecutionResult result = engine
-				.execute("START n=node(*) MATCH (n)-[RESOURCE]->(m) "
-						+ "WHERE HAS(n.userid) AND HAS(RESOURCE.rid) AND (n.userid='"
-						+ offset + "') return COUNT(RESOURCE.rid)");
-		String resourcesperuser = null;
-		for (Map<String, Object> row : result) {
-			for (Entry<String, Object> col : row.entrySet()) {
-				resourcesperuser = col.getValue().toString();
-			}
-		}
-		if (resourcesperuser == null) {
-			stats.put("resourcesperuser", "0");
-		} else {
-			stats.put("resourcesperuser", resourcesperuser);
-		}
-
-		result = engine
-				.execute("start n=node(*) match (n)-[FRIENDSHIP]-(m) "
-						+ "where has(n.userid) AND has(FRIENDSHIP.status) and n.userid='"
-						+ offset
-						+ "' AND FRIENDSHIP.status='2' return COUNT(FRIENDSHIP)");
-		String avgfriendsperuser = null;
-		for (Map<String, Object> row : result) {
-
-			for (Entry<String, Object> col : row.entrySet()) {
-				avgfriendsperuser = col.getValue().toString();
-				// System.out.println("11111111111111111111111111111111111111111 "
-				// + avgfriendsperuser);
-			}
-		}
-
-		if (avgfriendsperuser == null) {
-			stats.put("avgfriendsperuser", "0");
-		} else {
-			stats.put("avgfriendsperuser", avgfriendsperuser);
-		}
-
-		result = engine
-				.execute("start n=node(*) match (n)-[FRIENDSHIP]->(m) "
-						+ "where has(m.userid) AND has(FRIENDSHIP.status) and m.userid='"
-						+ offset
-						+ "' AND FRIENDSHIP.status='1' return COUNT(FRIENDSHIP)");
-		String avgpendingperuser = null;
-		for (Map<String, Object> row : result) {
-
-			for (Entry<String, Object> col : row.entrySet()) {
-				avgpendingperuser = col.getValue().toString();
-				// System.out.println("11111111111111111111111111111111111111111 "
-				// + avgpendingperuser);
-			}
-		}
-
-		if (avgpendingperuser == null) {
-			stats.put("avgpendingperuser", "0");
-		} else {
-			stats.put("avgpendingperuser", avgpendingperuser);
-		}
-
-		// System.exit(0);
-		//
 		// Statement st = null;
 		// ResultSet rs = null;
 		// String query = "";
-
+		//
 		// try {
-		// // st = conn.createStatement();
-		// // // Get user count.
-		// // query = "SELECT count(*) FROM users";
-		// // rs = st.executeQuery(query);
-		// // if (rs.next()) {
-		// // stats.put("usercount", rs.getString(1));
-		// // } else
-		// // stats.put("usercount", "0");
-		// // if (rs != null)
-		// // rs.close();
+		// st = conn.createStatement();
+		// // Get user count.
+		// query = "SELECT count(*) FROM users";
+		// rs = st.executeQuery(query);
+		// if (rs.next()) {
+		// stats.put("usercount", rs.getString(1));
+		// } else
+		// stats.put("usercount", "0");
+		// if (rs != null ) rs.close();
 		//
 		// // Get user offset.
-		// // query = "SELECT min(userid) FROM users";
-		// // rs = st.executeQuery(query);
-		// // String offset = "0";
-		// // if (rs.next()) {
-		// // offset = rs.getString(1);
-		// // }
-		// //
-		// // // Get resources per user.
-		// // query = "SELECT count(*) FROM resources WHERE creatorid = "
-		// // + Integer.parseInt(offset);
-		// // rs = st.executeQuery(query);
-		// // if (rs.next()) {
-		// // stats.put("resourcesperuser", rs.getString(1));
-		// // } else {
-		// // stats.put("resourcesperuser", "0");
-		// // }
-		// // if (rs != null)
-		// // rs.close();
+		// query = "SELECT min(userid) FROM users";
+		// rs = st.executeQuery(query);
+		// String offset = "0";
+		// if (rs.next()) {
+		// offset = rs.getString(1);
+		// }
+		//
+		// // Get resources per user.
+		// query = "SELECT count(*) FROM resources WHERE creatorid = " +
+		// Integer.parseInt(offset);
+		// rs = st.executeQuery(query);
+		// if (rs.next()) {
+		// stats.put("resourcesperuser", rs.getString(1));
+		// } else {
+		// stats.put("resourcesperuser", "0");
+		// }
+		// if(rs != null) rs.close();
 		//
 		// // Get number of friends per user.
-		//
-		// query = "SELECT count(*) FROM friendship WHERE (inviterid = "
-		// + Integer.parseInt(offset) + " OR inviteeid = "
-		// + Integer.parseInt(offset) + ") AND status = 2";
+		// query = "SELECT count(*) FROM friendship WHERE (inviterid = " +
+		// Integer.parseInt(offset) + " OR inviteeid = " +
+		// Integer.parseInt(offset) +") AND status = 2";
 		// rs = st.executeQuery(query);
 		// if (rs.next()) {
 		// stats.put("avgfriendsperuser", rs.getString(1));
 		// } else
 		// stats.put("avgfriendsperuser", "0");
-		// if (rs != null)
-		// rs.close();
-
-		// query = "SELECT count(*) FROM friendship WHERE (inviteeid = "
-		// + Integer.parseInt(offset) + ") AND status = 1";
+		// if (rs != null) rs.close();
+		// query = "SELECT count(*) FROM friendship WHERE (inviteeid = " +
+		// Integer.parseInt(offset) + ") AND status = 1";
 		// rs = st.executeQuery(query);
 		// if (rs.next()) {
 		// stats.put("avgpendingperuser", rs.getString(1));
@@ -1179,9 +1152,9 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 		// sx.printStackTrace(System.out);
 		// } finally {
 		// try {
-		// if (rs != null)
+		// if(rs != null)
 		// rs.close();
-		// if (st != null)
+		// if(st != null)
 		// st.close();
 		// } catch (SQLException e) {
 		// e.printStackTrace(System.out);
@@ -1195,55 +1168,55 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	public int CreateFriendship(int friendid1, int friendid2) {
 		int retVal = SUCCESS;
 
-//		// find the inviter
-//		IndexHits<Node> result = EmbeddedNeo4jWithIndexing.nodeIndex.get(
-//				"userid", Integer.toString(friendid1));
-//
-//		// make sure primary key of user only return 1 user node
-//		if (result.size() != 1) {
-//			System.err
-//					.println("Error: in Neo4jDBClient.insertEntity, primary key userid ="
-//							+ friendid1 + "returns multiple nodes. Exiting...");
-//			System.exit(-1);
-//		}
-//
-//		Node inviter = result.iterator().next();
-//
-//		result = EmbeddedNeo4jWithIndexing.nodeIndex.get("userid",
-//				Integer.toString(friendid2));
-//
-//		if (result.size() != 1) {
-//			System.err
-//					.println("Error: in Neo4jDBClient.insertEntity, primary key userid ="
-//							+ friendid2 + "returns multiple nodes. Exiting...");
-//			System.exit(-1);
-//		}
-//
-//		Node invitee = result.iterator().next();
-//
-//		Transaction tx = db.graphDb.beginTx();
-//		try {
-//			// HashMap<String, String>
-//			// Relationship resource_edge = db.createRelation(inviter, invitee,
-//			// propertyToSet);
-//			Relationship friendship_edge = inviter.createRelationshipTo(
-//					invitee, RelTypes.FRIENDSHIP);
-//			friendship_edge.setProperty("status", Integer.toString(2));
-//
-//			db.friendshipIndex.add(
-//					friendship_edge,
-//					"ids",
-//					inviter.getProperty("userid") + " "
-//							+ invitee.getProperty("userid"));
-//
-//			tx.success();
-//
-//		} finally {
-//			tx.finish();
-//		}
-//
-//		db.printDBSize();
-//		db.printRelationSize();
+		// find the inviter
+		IndexHits<Node> result = EmbeddedNeo4jWithIndexing.nodeIndex.get(
+				"userid", Integer.toString(friendid1));
+
+		// make sure primary key of user only return 1 user node
+		if (result.size() != 1) {
+			System.err
+					.println("Error: in Neo4jDBClient.insertEntity, primary key userid ="
+							+ friendid1 + "returns multiple nodes. Exiting...");
+			System.exit(-1);
+		}
+
+		Node inviter = result.iterator().next();
+
+		result = EmbeddedNeo4jWithIndexing.nodeIndex.get("userid",
+				Integer.toString(friendid2));
+
+		if (result.size() != 1) {
+			System.err
+					.println("Error: in Neo4jDBClient.insertEntity, primary key userid ="
+							+ friendid2 + "returns multiple nodes. Exiting...");
+			System.exit(-1);
+		}
+
+		Node invitee = result.iterator().next();
+
+		Transaction tx = db.graphDb.beginTx();
+		try {
+			// HashMap<String, String>
+			// Relationship resource_edge = db.createRelation(inviter, invitee,
+			// propertyToSet);
+			Relationship friendship_edge = inviter.createRelationshipTo(
+					invitee, RelTypes.FRIENDSHIP);
+			friendship_edge.setProperty("status", Integer.toString(2));
+
+			db.friendshipIndex.add(
+					friendship_edge,
+					"ids",
+					inviter.getProperty("userid") + " "
+							+ invitee.getProperty("userid"));
+			
+			tx.success();
+
+		} finally {
+			tx.finish();
+		}
+
+		db.printDBSize();
+		db.printRelationSize();
 
 		return retVal;
 	}

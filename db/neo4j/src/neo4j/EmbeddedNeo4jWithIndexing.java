@@ -21,9 +21,9 @@ public class EmbeddedNeo4jWithIndexing {
 	public static final String USERNAME_KEY = "username";
 	public static GraphDatabaseService graphDb;
 	public static Index<Node> nodeIndex = null;
-	
-	
-	//public static int min_userid=Integer.MAX_VALUE;
+	public static Index<Relationship> resourcesIndex = null;
+	public static Index<Relationship> friendshipIndex = null;
+	public static Index<Relationship> resourcesCreatorIndex = null;
 
 	// // START SNIPPET: createRelTypes
 	// public static enum RelTypes implements RelationshipType {
@@ -201,16 +201,6 @@ public class EmbeddedNeo4jWithIndexing {
 						.equalsIgnoreCase("tpic"))) {
 					node.setProperty(k, values.get(k).toString());
 				}
-				
-				/*
-				//if (user_id_tmp.equals("userid")) {
-				int current_user_id_int = Integer.parseInt(entityPK.toString() );
-				if (current_user_id_int<min_userid) {	
-					System.out.println("currenttttttttttttttttttt:" + current_user_id_int);
-					min_userid = current_user_id_int;
-					System.out.println("min_userid:" + min_userid);
-				}
-				//} */
 			}
 			tx.success();
 		} finally {
@@ -262,17 +252,6 @@ public class EmbeddedNeo4jWithIndexing {
 			count++;
 		}
 		System.out.println("Size of Graph DB (number of nodes): " + count);
-	}
-
-	public static int size() {
-		GlobalGraphOperations g = GlobalGraphOperations.at(graphDb);
-		Iterator<Node> itr = g.getAllNodes().iterator();
-		int count = 0;
-		while (itr.hasNext()) {
-			itr.next();
-			count++;
-		}
-		return count;
 	}
 
 	public static void printRelationSize() {
