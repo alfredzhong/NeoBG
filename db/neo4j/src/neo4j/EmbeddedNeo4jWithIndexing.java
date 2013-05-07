@@ -21,9 +21,7 @@ public class EmbeddedNeo4jWithIndexing {
 	public static final String USERNAME_KEY = "username";
 	public static GraphDatabaseService graphDb;
 	public static Index<Node> nodeIndex = null;
-	public static Index<Relationship> resourcesIndex = null;
-	public static Index<Relationship> friendshipIndex = null;
-	public static Index<Relationship> resourcesCreatorIndex = null;
+	
 	
 	//public static int min_userid=Integer.MAX_VALUE;
 
@@ -38,25 +36,16 @@ public class EmbeddedNeo4jWithIndexing {
 	public EmbeddedNeo4jWithIndexing(final String db_path) {
 		DB_PATH = db_path;
 		graphDb = new EmbeddedGraphDatabase(DB_PATH);
-		setIndex();
+	
 	}
 
 	public void setDbPath(final String db_path) {
 		DB_PATH = db_path;
 		graphDb = new EmbeddedGraphDatabase(DB_PATH);
-		setIndex();
+		
 	}
 
-	public void setIndex() {
-		if (graphDb != null) {
-			nodeIndex = graphDb.index().forNodes("nodes");
-			resourcesIndex = graphDb.index().forRelationships("resources");
-			friendshipIndex = graphDb.index().forRelationships("friendship");
-			resourcesCreatorIndex = graphDb.index().forRelationships(
-					"resourcesCreator");
-
-		}
-	}
+	
 
 	// public void populate() {
 	// if (DB_PATH == null) {
@@ -244,11 +233,7 @@ public class EmbeddedNeo4jWithIndexing {
 				resource_edge.setProperty(k, values.get(k).toString());
 			}
 
-			resourcesIndex.add(resource_edge, "ids", n1.getProperty("userid")
-					+ " " + n2.getProperty("userid"));
-
-			resourcesCreatorIndex.add(resource_edge, "creatorid",
-					resource_edge.getProperty("creatorid"));
+			
 			// resourcesIndex.add(resource_edge, values);
 			tx.success();
 		} finally {
