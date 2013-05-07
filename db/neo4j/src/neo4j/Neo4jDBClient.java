@@ -316,188 +316,63 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 			HashMap<String, ByteIterator> result, boolean insertImage,
 			boolean testMode) {
 		int retVal = SUCCESS;
-		// ResultSet rs = null;
-		//
-		// if (requesterID < 0 || profileOwnerID < 0)
-		// return ERROR;
-		//
-		// String query = "";
-		// String uid = "";
-		// try {
-		// // Friend count.
-		// query =
-		// "SELECT count(*) FROM friendship WHERE (inviterID = ? OR inviteeID = ?) AND status = 2";
-		// if ((preparedStatement = newCachedStatements.get(GETFRNDCNT_STMT)) ==
-		// null)
-		// preparedStatement = createAndCacheStatement(GETFRNDCNT_STMT, query);
-		// preparedStatement.setInt(1, profileOwnerID);
-		// preparedStatement.setInt(2, profileOwnerID);
-		// rs = preparedStatement.executeQuery();
-		// if (rs.next())
-		// result.put("friendcount", new
-		// ObjectByteIterator(rs.getString(1).getBytes()));
-		// else
-		// result.put("friendcount", new ObjectByteIterator("0".getBytes()));
-		// } catch (SQLException sx) {
-		// retVal = ERROR;
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if (rs != null)
-		// rs.close();
-		// if (preparedStatement != null)
-		// preparedStatement.clearParameters();
-		// } catch (SQLException e) {
-		// e.printStackTrace(System.out);
-		// retVal = ERROR;
-		// }
-		// }
-		//
-		// // Pending friend request count.
-		// // If owner viewing her own profile, she can view her pending friend
-		// requests.
-		// if (requesterID == profileOwnerID) {
-		// query =
-		// "SELECT count(*) FROM friendship WHERE inviteeID = ? AND status = 1";
-		// try {
-		// if ((preparedStatement = newCachedStatements.get(GETPENDCNT_STMT)) ==
-		// null)
-		// preparedStatement = createAndCacheStatement(GETPENDCNT_STMT, query);
-		// preparedStatement.setInt(1, profileOwnerID);
-		// rs = preparedStatement.executeQuery();
-		// if (rs.next())
-		// result.put("pendingcount", new
-		// ObjectByteIterator(rs.getString(1).getBytes()));
-		// else
-		// result.put("pendingcount", new ObjectByteIterator("0".getBytes()));
-		// } catch (SQLException sx) {
-		// retVal = ERROR;
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if (rs != null)
-		// rs.close();
-		// if (preparedStatement != null)
-		// preparedStatement.clearParameters();
-		// } catch (SQLException e) {
-		// e.printStackTrace(System.out);
-		// retVal = ERROR;
-		// }
-		// }
-		// }
-		//
-		// // Resource count.
-		// query = "SELECT count(*) FROM resources WHERE wallUserID = ?";
-		//
-		// try {
-		// if ((preparedStatement = newCachedStatements.get(GETRESCNT_STMT)) ==
-		// null)
-		// preparedStatement = createAndCacheStatement(GETRESCNT_STMT, query);
-		// preparedStatement.setInt(1, profileOwnerID);
-		// rs = preparedStatement.executeQuery();
-		// if (rs.next())
-		// result.put("resourcecount", new
-		// ObjectByteIterator(rs.getString(1).getBytes())) ;
-		// else
-		// result.put("resourcecount", new ObjectByteIterator("0".getBytes())) ;
-		// } catch (SQLException sx) {
-		// retVal = ERROR;
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if (rs != null)
-		// rs.close();
-		// if (preparedStatement != null)
-		// preparedStatement.clearParameters();
-		// } catch (SQLException e) {
-		// retVal = ERROR;
-		// e.printStackTrace(System.out);
-		// }
-		// }
-		//
-		// // Profile details.
-		// try {
-		// if (insertImage && FSimagePath.equals("")) {
-		// query =
-		// "SELECT userid, username, fname, lname, gender, dob, jdate, ldate, address, email, tel, pic FROM users WHERE UserID = ?";
-		// if ((preparedStatement = newCachedStatements.get(GETPROFILEIMG_STMT))
-		// == null)
-		// preparedStatement = createAndCacheStatement(GETPROFILEIMG_STMT,
-		// query);
-		// } else {
-		// query =
-		// "SELECT userid, username, fname, lname, gender, dob, jdate, ldate, address, email, tel FROM users WHERE UserID = ?";
-		// if ((preparedStatement = newCachedStatements.get(GETPROFILE_STMT)) ==
-		// null)
-		// preparedStatement = createAndCacheStatement(GETPROFILE_STMT, query);
-		// }
-		// preparedStatement.setInt(1, profileOwnerID);
-		// rs = preparedStatement.executeQuery();
-		// ResultSetMetaData md = rs.getMetaData();
-		// int col = md.getColumnCount();
-		// if (rs.next()) {
-		// for (int i = 1; i <= col; i++){
-		// String col_name = md.getColumnName(i);
-		// String value = "";
-		//
-		// if (col_name.equalsIgnoreCase("userid")) {
-		// uid = rs.getString(col_name);
-		// }
-		//
-		// if (col_name.equalsIgnoreCase("pic") ) {
-		// // Get as bytes.
-		// byte[] bytes = rs.getBytes(i);
-		// value = bytes.toString();
-		// // If test mode dump pic into a file.
-		// if (testMode) {
-		// // Dump to file.
-		// try {
-		// FileOutputStream fos = new FileOutputStream(profileOwnerID +
-		// "-proimage.bmp");
-		// fos.write(bytes);
-		// fos.close();
-		// } catch (Exception ex) {
-		// System.out.println(ex.getMessage());
-		// }
-		// }
-		// } else
-		// value = rs.getString(col_name);
-		// result.put(col_name, new ObjectByteIterator(value.getBytes()));
-		// }
-		//
-		// // Fetch the profile image from the file system.
-		// if (insertImage && !FSimagePath.equals("") ) {
-		// // Get the profile image from the file.
-		// byte[] profileImage = GetImageFromFS(uid, true);
-		// if (testMode) {
-		// // Dump to file.
-		// try {
-		// FileOutputStream fos = new FileOutputStream(profileOwnerID +
-		// "-proimage.bmp");
-		// fos.write(profileImage);
-		// fos.close();
-		// } catch (Exception ex){
-		// }
-		// }
-		// result.put("pic", new ObjectByteIterator(profileImage));
-		// }
-		// }
-		// } catch (SQLException sx) {
-		// retVal = ERROR;
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if (rs != null)
-		// rs.close();
-		// if(preparedStatement != null)
-		// preparedStatement.clearParameters();
-		// } catch (SQLException e) {
-		// retVal = ERROR;
-		// e.printStackTrace(System.out);
-		// }
-		// }
+		String count = null;
+		ExecutionEngine engine = new ExecutionEngine(db.graphDb);
+		ExecutionResult ret = engine
+				.execute("START n=node(*) MATCH (n) -[FRIENDSHIP]->(m) "
+						+ "WHERE HAS(n.userid) AND HAS(m.userid) AND HAS(FRIENDSHIP.status) AND "
+						+ "(FRIENDSHIP.status='2') AND (n.userid='"
+						+ profileOwnerID + "' OR m.userid='" + profileOwnerID
+						+ "') " + "RETURN COUNT(FRIENDSHIP)");
+		for (Map<String, Object> row : ret) {
+			for (Entry<String, Object> col : row.entrySet()) {
+				count = col.getValue().toString();
+			}
+		}
+		if (Integer.parseInt(count) == 0) {
+			result.put("friendcount", new ObjectByteIterator("0".getBytes()));
+		} else {
+			result.put("friendcount", new ObjectByteIterator(count.getBytes()));
+		}
+		if (requesterID == profileOwnerID) {
+			ret = engine
+					.execute("START n=node(*) MATCH (m)-[FRIENDSHIP]->(n) "
+							+ "WHERE HAS(m.userid) AND HAS(n.userid) AND HAS(FRIENDSHIP.status) AND "
+							+ "(n.userid='"
+							+ profileOwnerID
+							+ "') AND (FRIENDSHIP.status='1') RETURN COUNT(FRIENDSHIP)");
+			for (Map<String, Object> row : ret) {
+				for (Entry<String, Object> col : row.entrySet()) {
+					count = col.getValue().toString();
+				}
+			}
+			if (Integer.parseInt(count) == 0) {
+				result.put("pendingcount",
+						new ObjectByteIterator("0".getBytes()));
+			} else {
+				result.put("pendingcount",
+						new ObjectByteIterator(count.getBytes()));
+			}
+		}
 
+		ret = engine
+				.execute("START n=node(*) MATCH (n)-[RESOURCE]-(m) WHERE HAS(RESOURCE.walluserid) AND "
+						+ "(RESOURCE.walluserid='"
+						+ profileOwnerID
+						+ "') RETURN COUNT(RESOURCE)");
+		for (Map<String, Object> row : ret) {
+			for (Entry<String, Object> col : row.entrySet()) {
+				count = col.getValue().toString();
+			}
+		}
+		if (Integer.parseInt(count) == 0) {
+			result.put("resourcecount", new ObjectByteIterator("0".getBytes()));
+		} else {
+			result.put("resourcecount",
+					new ObjectByteIterator(count.getBytes()));
+		}
 		return retVal;
+
 	}
 
 	@Override
@@ -505,108 +380,24 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 			Set<String> fields, Vector<HashMap<String, ByteIterator>> result,
 			boolean insertImage, boolean testMode) {
 		int retVal = SUCCESS;
-		// ResultSet rs = null;
-		//
-		// if (requesterID < 0 || profileOwnerID < 0)
-		// return ERROR;
-		//
-		// String query = "";
-		// String uid = "";
-		// try {
-		// if (insertImage && FSimagePath.equals("")) {
-		// query =
-		// "SELECT userid, inviterid, inviteeid, username, fname, lname, gender, dob, jdate, ldate, address, email, tel, tpic FROM users, friendship WHERE ((inviterid = ? AND userid = inviteeid) or (inviteeid = ? AND userid = inviterid)) AND status = 2";
-		// if ((preparedStatement = newCachedStatements.get(GETFRNDSIMG_STMT))
-		// == null)
-		// preparedStatement = createAndCacheStatement(GETFRNDSIMG_STMT, query);
-		// } else {
-		// query =
-		// "SELECT userid, inviterid, inviteeid, username, fname, lname, gender, dob, jdate, ldate, address, email, tel FROM users, friendship WHERE ((inviterid = ? AND userid = inviteeid) or (inviteeid = ? AND userid = inviterid)) AND status = 2";
-		// if ((preparedStatement = newCachedStatements.get(GETFRNDS_STMT)) ==
-		// null)
-		// preparedStatement = createAndCacheStatement(GETFRNDS_STMT, query);
-		// }
-		// preparedStatement.setInt(1, profileOwnerID);
-		// preparedStatement.setInt(2, profileOwnerID);
-		// rs = preparedStatement.executeQuery();
-		// int cnt = 0;
-		// while (rs.next()) {
-		// cnt++;
-		// HashMap<String, ByteIterator> values = new HashMap<String,
-		// ByteIterator>();
-		// if (fields != null) {
-		// for (String field : fields) {
-		// String value = rs.getString(field);
-		// if (field.equalsIgnoreCase("userid"))
-		// field = "userid";
-		// values.put(field, new ObjectByteIterator(value.getBytes()));
-		// }
-		// result.add(values);
-		// } else {
-		// // Get the number of columns and their names.
-		// ResultSetMetaData md = rs.getMetaData();
-		// int col = md.getColumnCount();
-		// for (int i = 1; i <= col; i++) {
-		// String col_name = md.getColumnName(i);
-		// String value = "";
-		// if (col_name.equalsIgnoreCase("tpic")) {
-		// // Get as a bytes.
-		// byte[] bytes = rs.getBytes(i);
-		// value = bytes.toString();
-		// if (testMode){
-		// // Dump to file.
-		// try{
-		// FileOutputStream fos = new FileOutputStream(profileOwnerID + "-" +
-		// cnt + "-thumbimage.bmp");
-		// fos.write(bytes);
-		// fos.close();
-		// }catch(Exception ex){
-		// }
-		// }
-		// } else {
-		// value = rs.getString(col_name);
-		// if (col_name.equalsIgnoreCase("userid")) {
-		// uid = value;
-		// col_name = "userid";
-		// }
-		// }
-		// values.put(col_name, new ObjectByteIterator(value.getBytes()));
-		// }
-		// // Fetch the thumbnail image from the file system.
-		// if (insertImage && !FSimagePath.equals("")) {
-		// byte[] thumbImage = GetImageFromFS(uid, false);
-		// // Get the thumbnail image from the file.
-		// if (testMode) {
-		// // Dump to file.
-		// try {
-		// FileOutputStream fos = new FileOutputStream(profileOwnerID + "-" +
-		// cnt + "-thumbimage.bmp");
-		// fos.write(thumbImage);
-		// fos.close();
-		// } catch(Exception ex) {
-		// }
-		// }
-		// values.put("tpic", new ObjectByteIterator(thumbImage));
-		// }
-		// result.add(values);
-		// }
-		// }
-		// } catch(SQLException sx) {
-		// retVal = ERROR;
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if (rs != null)
-		// rs.close();
-		// if(preparedStatement != null)
-		// preparedStatement.clearParameters();
-		// } catch (SQLException e) {
-		// retVal = ERROR;
-		// e.printStackTrace(System.out);
-		// }
-		// }
 
-		return retVal;
+        ExecutionEngine engine = new ExecutionEngine(db.graphDb);
+        ExecutionResult ret = engine.execute("START n=node(*) match (n)-[FRIENDSHIP]-(m) WHERE " +
+
+                "HAS(n.userid) AND HAS(m.userid) AND HAS(FRIENDSHIP.status) AND " +
+                "((n.userid='"+profileOwnerID+"') OR (m.userid='"+profileOwnerID+"')) AND FRIENDSHIP.status='2' " +
+
+                "RETURN n.userid AS userid, m.userid AS invitee, " +
+                "n.username, n.fname, n.lname,n.gender,n.dob,n.jdate,n.ldate,n.address,n.email,n.tel");
+        HashMap<String, ByteIterator> m  = new HashMap<String, ByteIterator>();
+        for ( Map<String, Object> row : ret ) {
+            for ( Entry<String, Object> col : row.entrySet() ) {
+               if (col.getKey().equalsIgnoreCase("userid"))
+                   m.put("userid", new ObjectByteIterator(col.getValue().toString().getBytes()));
+            }
+        }
+        result.add(m);
+        return retVal;
 	}
 
 	@Override
