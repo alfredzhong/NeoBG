@@ -2940,8 +2940,9 @@ public class CoreWorkload extends Workload
 					break;
 				}
 			}
-			if(key == -1)
-				System.out.println("No more friends to allocate for  "+uid+" ; benchmark results invalid");
+			if(key == -1) {
+				//System.out.println("No more friends to allocate for  "+uid+" ; benchmark results invalid");
+			}
 			rStat.release();	
 		}catch(Exception e){
 			System.out.println("Error in view not related");
