@@ -264,7 +264,6 @@ public class PostgreDBClient extends DB {
 			HashMap<String, ByteIterator> values, boolean insertImage) {
 		if (null == entitySet || null == entityPK)
 			return ERROR;
-		
 		ResultSet rs = null;
 		try {
 			StringBuilder query = new StringBuilder("");
@@ -332,7 +331,6 @@ public class PostgreDBClient extends DB {
 				return ERROR;
 			}
 		}
-		
 		return SUCCESS;
 	}
 
@@ -704,7 +702,6 @@ public class PostgreDBClient extends DB {
 	@Override
 	public int acceptFriend(int inviterID, int inviteeID) {
 		int retVal = SUCCESS;
-		
 		if (inviterID < 0 || inviteeID < 0)
 			return ERROR;
 		String query;
@@ -765,30 +762,47 @@ public class PostgreDBClient extends DB {
 	@Override
 	public int inviteFriend(int inviterID, int inviteeID) {
 		int retVal = SUCCESS;
-		
+		ResultSet rs = null;
 		if (inviterID < 0 || inviteeID < 0)
 			return ERROR;
-		String query = "INSERT INTO friendship VALUES (?, ?, 1)";
-		
-		try {
-			if ((preparedStatement = newCachedStatements.get(INVFRND_STMT)) == null)
-				preparedStatement = createAndCacheStatement(INVFRND_STMT, query);	
+		String checkquery = "SELECT * FROM friendship WHERE inviterid = ? AND inviteeid = ?";
+		try {		
+			if ((preparedStatement = newCachedStatements.get(GETPENDIMG_STMT)) == null)
+			preparedStatement = createAndCacheStatement(GETPENDIMG_STMT, checkquery);	
 			preparedStatement.setInt(1, inviterID);
 			preparedStatement.setInt(2, inviteeID);
-			preparedStatement.executeUpdate();
+			rs = preparedStatement.executeQuery();
 		} catch (SQLException sx) {
 			retVal = ERROR;
 			sx.printStackTrace(System.out);
-		} finally {
-			try {
-				if(preparedStatement != null)
-					preparedStatement.clearParameters();
-			} catch (SQLException e) {
-				retVal = ERROR;
-				e.printStackTrace(System.out);
-			}
 		}
-		
+		try {
+			if (!rs.next()) {
+				String query = "INSERT INTO friendship VALUES (?, ?, 1)";
+				
+				try {
+					if ((preparedStatement = newCachedStatements.get(INVFRND_STMT)) == null)
+						preparedStatement = createAndCacheStatement(INVFRND_STMT, query);	
+					preparedStatement.setInt(1, inviterID);
+					preparedStatement.setInt(2, inviteeID);
+					preparedStatement.executeUpdate();
+				} catch (SQLException sx) {
+					retVal = ERROR;
+					sx.printStackTrace(System.out);
+				} finally {
+					try {
+						if(preparedStatement != null)
+							preparedStatement.clearParameters();
+					} catch (SQLException e) {
+						retVal = ERROR;
+						e.printStackTrace(System.out);
+					}
+				}
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return retVal;
 	}
 
@@ -884,7 +898,6 @@ public class PostgreDBClient extends DB {
 				e.printStackTrace(System.out);
 			}
 		}
-
 		return retVal;		
 	}
 

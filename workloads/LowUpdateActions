@@ -20,8 +20,8 @@ InviteFriendAction=0.002
 AcceptFriendReqAction=0.002
 RejectFriendReqAction=0.003
 ThawFriendshipAction=0.003
-ViewTopKResourcesAction=0.4
-ViewCommentsOnResourceAction=0.09
+ViewTopKResourcesAction=0.49
+ViewCommentsOnResourceAction=0
 PostCommentOnResourceAction=0
 DeleteCommentOnResourceAction=0
 

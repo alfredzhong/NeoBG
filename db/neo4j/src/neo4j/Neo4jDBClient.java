@@ -208,30 +208,14 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 		// db.shutdown();
 	}
 
-	// private PreparedStatement createAndCacheStatement(int stmttype, String
-	// query) throws SQLException{
-	// PreparedStatement newStatement = conn.prepareStatement(query);
-	// PreparedStatement stmt = newCachedStatements.putIfAbsent(stmttype,
-	// newStatement);
-	// if (stmt == null) return newStatement;
-	// else return stmt;
-	// }
+	
 
 	// Loading phase query will not be cached.
 	@Override
 	public int insertEntity(String entitySet, String entityPK,
 			HashMap<String, ByteIterator> values, boolean insertImage) {
 
-		// for test table name;
-		// if (tables == null) {
-		// tables = new HashSet<String>();
-		// }
-		// tables.add(entitySet);
-		// System.out.println("Current unique tables: ");
-		// for (String e : tables) {
-		// System.out.println(e);
-		// }
-		// System.out.println("\n\n");
+		
 
 		if (null == entitySet || null == entityPK)
 			return ERROR;
@@ -380,6 +364,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 			Set<String> fields, Vector<HashMap<String, ByteIterator>> result,
 			boolean insertImage, boolean testMode) {
 		int retVal = SUCCESS;
+		
 
 		ExecutionEngine engine = new ExecutionEngine(db.graphDb);
 		ExecutionResult ret = engine
@@ -405,6 +390,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 			}
 		}
 		result.add(m);
+		
 		return retVal;
 	}
 
@@ -443,9 +429,11 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 
 	@Override
 	public int acceptFriend(int inviterID, int inviteeID) {
+		if (inviterID < 0 || inviteeID < 0) 
+			return ERROR;
 		int retVal = SUCCESS;
 		ExecutionEngine engine = new ExecutionEngine(db.graphDb);
-		engine.execute("START n=node(*), m = node(*) MATCH (n)-[FRIENDSHIP]->(m) WHERE "
+		ExecutionResult result = engine.execute("START n=node(*), m = node(*) MATCH (n)-[FRIENDSHIP]->(m) WHERE "
 				+ "HAS(FRIENDSHIP.status) AND HAS(n.userid) AND HAS(m.userid) AND (n.userid = '"
 				+ inviterID
 				+ "') "
@@ -460,33 +448,12 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 
 		int retVal = SUCCESS;
 		ExecutionEngine engine = new ExecutionEngine(db.graphDb);
-		engine.execute("START n=node(*) MATCH (n)-[FRIENDSHIP]->(m) "
+		ExecutionResult result = engine.execute("START n=node(*) MATCH (n)-[FRIENDSHIP]->(m) "
 				+ "WHERE HAS(n.userid) AND HAS(m.userid) AND HAS(FRIENDSHIP.status) AND FRIENDSHIP.status='1' "
 				+ "AND (n.userid='" + inviterID + "') AND (m.userid='"
 				+ inviteeID + "') DELETE FRIENDSHIP");
 		return retVal;
-
-		/*
-		 * ExecutionEngine engine = new ExecutionEngine(db.graphDb);
-		 * ExecutionResult result = engine
-		 * .execute("START n=node(*) MATCH (n) -[FRIENDSHIP]->(m) " +
-		 * "WHERE HAS(FRIENDSHIP.status) AND HAS(n.userid) AND HAS(m.userid) AND (FRIENDSHIP.status='1') AND "
-		 * + "(n.userid='" + inviterID + "') AND (m.userid='" + inviteeID +
-		 * "') DELETE FRIENDSHIP");
-		 */
-		/*
-		 * Transaction tx = db.graphDb.beginTx(); try { IndexHits<Relationship>
-		 * result = db.friendshipIndex.get( "ids", Integer.toString(inviterID) +
-		 * " " + Integer.toString(inviteeID));
-		 * 
-		 * if (result.size() == 0) { return retVal; } else if (result.size() ==
-		 * 1) { result.getSingle().delete(); } else { System.err .println(
-		 * "Error: in Neo4jDBClient.acceptFriend(...), friendship primary key violation. Exiting..."
-		 * ); System.exit(-4); } tx.success(); } catch (Exception e) {
-		 * tx.failure(); } finally { tx.finish(); }
-		 * 
-		 * return retVal;
-		 */
+		
 	}
 
 	@Override
@@ -530,6 +497,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	@Override
 	public int viewTopKResources(int requesterID, int profileOwnerID, int k,
 			Vector<HashMap<String, ByteIterator>> result) {
+		
 		int retVal = SUCCESS;
         HashMap<String, ByteIterator> values = new HashMap<String, ByteIterator>();
 
@@ -577,48 +545,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	public int viewCommentOnResource(int requesterID, int profileOwnerID,
 			int resourceID, Vector<HashMap<String, ByteIterator>> result) {
 		int retVal = SUCCESS;
-		// ResultSet rs = null;
-		//
-		// if (profileOwnerID < 0 || requesterID < 0 || resourceID < 0)
-		// return ERROR;
-		//
-		// String query = "";
-		//
-		// // Get comment count.
-		// try {
-		// query = "SELECT * FROM manipulation WHERE rid = ?";
-		// if ((preparedStatement = newCachedStatements.get(GETRESCMT_STMT)) ==
-		// null)
-		// preparedStatement = createAndCacheStatement(GETRESCMT_STMT, query);
-		// preparedStatement.setInt(1, resourceID);
-		// rs = preparedStatement.executeQuery();
-		// while (rs.next()) {
-		// HashMap<String, ByteIterator> values = new HashMap<String,
-		// ByteIterator>();
-		// // Get the number of columns and their names.
-		// ResultSetMetaData md = rs.getMetaData();
-		// int col = md.getColumnCount();
-		// for (int i = 1; i <= col; i++) {
-		// String col_name = md.getColumnName(i);
-		// String value = rs.getString(col_name);
-		// values.put(col_name, new ObjectByteIterator(value.getBytes()));
-		// }
-		// result.add(values);
-		// }
-		// } catch(SQLException sx) {
-		// retVal = ERROR;
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if (rs != null)
-		// rs.close();
-		// if(preparedStatement != null)
-		// preparedStatement.clearParameters();
-		// } catch (SQLException e) {
-		// retVal = ERROR;
-		// e.printStackTrace(System.out);
-		// }
-		// }
+		
 
 		return retVal;
 	}
@@ -628,36 +555,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 			int resourceID, HashMap<String, ByteIterator> values) {
 		int retVal = SUCCESS;
 
-		// if (profileOwnerID < 0 || commentCreatorID < 0 || resourceID < 0)
-		// return ERROR;
-		//
-		// String query =
-		// "INSERT INTO manipulation (mid, creatorid, rid, modifierid, timestamp, type, content) VALUES (?, ?, ?, ?, ?, ?, ?)";
-		// try {
-		// if ((preparedStatement = newCachedStatements.get(POSTCMT_STMT)) ==
-		// null)
-		// preparedStatement = createAndCacheStatement(POSTCMT_STMT, query);
-		// preparedStatement.setInt(1,
-		// Integer.parseInt(values.get("mid").toString()));
-		// preparedStatement.setInt(2, profileOwnerID);
-		// preparedStatement.setInt(3, resourceID);
-		// preparedStatement.setInt(4, commentCreatorID);
-		// preparedStatement.setString(5, values.get("timestamp").toString());
-		// preparedStatement.setString(6, values.get("type").toString());
-		// preparedStatement.setString(7, values.get("content").toString());
-		// preparedStatement.executeUpdate();
-		// } catch (SQLException sx) {
-		// retVal = ERROR;
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if(preparedStatement != null)
-		// preparedStatement.clearParameters();
-		// } catch (SQLException e) {
-		// retVal = ERROR;
-		// e.printStackTrace(System.out);
-		// }
-		// }
+		
 
 		return retVal;
 	}
@@ -666,30 +564,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	public int delCommentOnResource(int resourceCreatorID, int resourceID,
 			int manipulationID) {
 		int retVal = SUCCESS;
-		//
-		// if (resourceCreatorID < 0 || resourceID < 0 || manipulationID < 0)
-		// return ERROR;
-		//
-		// String query = "DELETE FROM manipulation WHERE mid = ? AND rid = ?";
-		// try {
-		// if ((preparedStatement = newCachedStatements.get(DELCMT_STMT)) ==
-		// null)
-		// preparedStatement = createAndCacheStatement(DELCMT_STMT, query);
-		// preparedStatement.setInt(1, manipulationID);
-		// preparedStatement.setInt(2, resourceID);
-		// preparedStatement.executeUpdate();
-		// } catch (SQLException sx) {
-		// retVal = ERROR;
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if(preparedStatement != null)
-		// preparedStatement.clearParameters();
-		// } catch (SQLException e) {
-		// retVal = ERROR;
-		// e.printStackTrace(System.out);
-		// }
-		// }
+		
 
 		return retVal;
 	}
@@ -699,8 +574,10 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 		int retVal = SUCCESS;
 
 		// Remove index first
-		db.friendshipIndex.remove(db.friendshipIndex.get("ids",
-				friendKey(friendid1, friendid2)).getSingle());
+
+		//db.friendshipIndex.remove(db.friendshipIndex.get("ids",
+		//		friendKey(friendid1, friendid2)).getSingle());
+		System.out.println("--------------------------------");
 
 		ExecutionEngine engine = new ExecutionEngine(db.graphDb);
 		ExecutionResult result = engine
@@ -709,48 +586,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 						+ "AND (FRIENDSHIP.status='2') AND " + "(n.userid='"
 						+ friendid1 + "') AND (m.userid='" + friendid2
 						+ "') DELETE FRIENDSHIP");
-		// Remove index first
-		// db.friendshipIndex.remove(db.friendshipIndex.get("ids",
-		// friendshipKey(friendid1, friendid2) ).getSingle());
-
-		// ExecutionEngine engine = new ExecutionEngine(db.graphDb);
-		// ExecutionResult result = engine
-		// .execute("START n=node(*) MATCH (n) -[FRIENDSHIP]-(m) "
-		// + "WHERE HAS(n.userid) AND HAS(m.userid) AND HAS(FRIENDSHIP.status) "
-		// + "AND (FRIENDSHIP.status='2') AND " + "(n.userid='"
-		// + friendid1 + "') AND (m.userid='" + friendid2
-		// + "') DELETE FRIENDSHIP");
-
-		// db.friendshipIndex.get("ids", friendshipKey(friendid1, friendid2)
-		// ).getSingle()
-
-		// if (friendid1 < 0 || friendid2 < 0)
-		// return ERROR;
-		//
-		// String query =
-		// "DELETE FROM friendship WHERE (inviterid = ? and inviteeid = ?) OR (inviterid = ? and inviteeid = ?) AND status = 2";
-		// try {
-		// if ((preparedStatement = newCachedStatements.get(UNFRNDFRND_STMT)) ==
-		// null)
-		// preparedStatement = createAndCacheStatement(UNFRNDFRND_STMT, query);
-		// preparedStatement.setInt(1, friendid1);
-		// preparedStatement.setInt(2, friendid2);
-		// preparedStatement.setInt(3, friendid2);
-		// preparedStatement.setInt(4, friendid1);
-		//
-		// preparedStatement.executeUpdate();
-		// } catch(SQLException sx) {
-		// retVal = ERROR;
-		// sx.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if(preparedStatement != null)
-		// preparedStatement.clearParameters();
-		// } catch (SQLException e) {
-		// retVal = ERROR;
-		// e.printStackTrace(System.out);
-		// }
-		// }
+		
 
 		return retVal;
 	}
@@ -791,8 +627,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 
 			for (Entry<String, Object> col : row.entrySet()) {
 				avgfriendsperuser = col.getValue().toString();
-				// System.out.println("11111111111111111111111111111111111111111 "
-				// + avgfriendsperuser);
+				
 			}
 		}
 
@@ -812,8 +647,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 
 			for (Entry<String, Object> col : row.entrySet()) {
 				avgpendingperuser = col.getValue().toString();
-				// System.out.println("11111111111111111111111111111111111111111 "
-				// + avgpendingperuser);
+				
 			}
 		}
 
@@ -858,9 +692,7 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 
 		Transaction tx = db.graphDb.beginTx();
 		try {
-			// HashMap<String, String>
-			// Relationship resource_edge = db.createRelation(inviter, invitee,
-			// propertyToSet);
+			
 			Relationship friendship_edge = inviter.createRelationshipTo(
 					invitee, RelTypes.FRIENDSHIP);
 			friendship_edge.setProperty("status", Integer.toString(2));
@@ -887,132 +719,12 @@ public class Neo4jDBClient extends DB implements Neo4jConstraints {
 	public void createSchema(Properties props) {
 		Statement stmt = null;
 
-		// try {
-		// stmt = conn.createStatement();
-		//
-		// dropIndex(stmt, "RESOURCES_CREATORID");
-		// dropIndex(stmt, "RESOURCES_WALLUSERID");
-		// dropIndex(stmt, "FRIENDSHIP_INVITEEID");
-		// dropIndex(stmt, "FRIENDSHIP_INVITERID");
-		// dropIndex(stmt, "FRIENDSHIP_STATUS");
-		// dropIndex(stmt, "MANIPULATION_RID");
-		// dropIndex(stmt, "MANIPULATION_CREATORID");
-		//
-		// dropTable(stmt, "FRIENDSHIP");
-		// dropTable(stmt, "MANIPULATION");
-		// dropTable(stmt, "RESOURCES");
-		// dropTable(stmt, "USERS");
-		//
-		// dropSequence(stmt, "MID_AUTO");
-		//
-		// stmt.executeUpdate("CREATE TABLE FRIENDSHIP"
-		// + "(INVITERID INTEGER, INVITEEID INTEGER,"
-		// + "STATUS INTEGER DEFAULT 1)");
-		//
-		// stmt.executeUpdate("CREATE TABLE MANIPULATION"
-		// + "(MID INTEGER," + "CREATORID INTEGER, RID INTEGER,"
-		// + "MODIFIERID INTEGER, TIMESTAMP VARCHAR(200),"
-		// + "TYPE VARCHAR(200), CONTENT VARCHAR(200))");
-		//
-		// stmt.executeUpdate("CREATE TABLE RESOURCES"
-		// + "(RID INTEGER,CREATORID INTEGER,"
-		// + "WALLUSERID INTEGER, TYPE VARCHAR(200),"
-		// + "BODY VARCHAR(200), DOC VARCHAR(200))");
-		//
-		// if
-		// (Boolean.parseBoolean(props.getProperty(Client.INSERT_IMAGE_PROPERTY,
-		// Client.INSERT_IMAGE_PROPERTY_DEFAULT))) {
-		// stmt.executeUpdate("CREATE TABLE USERS"
-		// + "(USERID INTEGER, USERNAME VARCHAR(200), "
-		// + "PW VARCHAR(200), FNAME VARCHAR(200), "
-		// + "LNAME VARCHAR(200), GENDER VARCHAR(200),"
-		// + "DOB VARCHAR(200),JDATE VARCHAR(200), "
-		// + "LDATE VARCHAR(200), ADDRESS VARCHAR(200),"
-		// + "EMAIL VARCHAR(200), TEL VARCHAR(200), PIC BYTEA, TPIC BYTEA)");
-		// } else {
-		// stmt.executeUpdate("CREATE TABLE USERS"
-		// + "(USERID INTEGER, USERNAME VARCHAR(200), "
-		// + "PW VARCHAR(200), FNAME VARCHAR(200), "
-		// + "LNAME VARCHAR(200), GENDER VARCHAR(200),"
-		// + "DOB VARCHAR(200),JDATE VARCHAR(200), "
-		// + "LDATE VARCHAR(200), ADDRESS VARCHAR(200),"
-		// + "EMAIL VARCHAR(200), TEL VARCHAR(200))");
-		// }
-		//
-		// /** Auto increment. */
-		// stmt.executeUpdate("CREATE SEQUENCE MID_AUTO");
-		// stmt.executeUpdate("ALTER TABLE MANIPULATION ALTER COLUMN MID SET DEFAULT NEXTVAL('MID_AUTO')");
-		//
-		// stmt.executeUpdate("ALTER TABLE USERS ALTER USERID SET NOT NULL");
-		// stmt.executeUpdate("ALTER TABLE USERS ADD PRIMARY KEY (USERID)");
-		// stmt.executeUpdate("ALTER TABLE MANIPULATION ADD PRIMARY KEY (MID)");
-		// stmt.executeUpdate("ALTER TABLE MANIPULATION ALTER MID SET NOT NULL");
-		// stmt.executeUpdate("ALTER TABLE MANIPULATION ALTER CREATORID SET NOT NULL");
-		// stmt.executeUpdate("ALTER TABLE MANIPULATION ALTER RID SET NOT NULL");
-		// stmt.executeUpdate("ALTER TABLE MANIPULATION ALTER MODIFIERID SET NOT NULL");
-		// stmt.executeUpdate("ALTER TABLE FRIENDSHIP ADD PRIMARY KEY (INVITERID, INVITEEID)");
-		// stmt.executeUpdate("ALTER TABLE FRIENDSHIP ALTER INVITERID SET NOT NULL");
-		// stmt.executeUpdate("ALTER TABLE FRIENDSHIP ALTER INVITEEID SET NOT NULL");
-		// stmt.executeUpdate("ALTER TABLE RESOURCES ADD PRIMARY KEY (RID)");
-		// stmt.executeUpdate("ALTER TABLE RESOURCES ALTER RID SET NOT NULL");
-		// stmt.executeUpdate("ALTER TABLE RESOURCES ALTER CREATORID SET NOT NULL");
-		// stmt.executeUpdate("ALTER TABLE RESOURCES ALTER WALLUSERID SET NOT NULL");
-		// stmt.executeUpdate("ALTER TABLE FRIENDSHIP ADD CONSTRAINT FRIENDSHIP_USERS_FK1 FOREIGN KEY (INVITERID)"
-		// + "REFERENCES USERS (USERID) ON DELETE CASCADE");
-		// stmt.executeUpdate("ALTER TABLE FRIENDSHIP ADD CONSTRAINT FRIENDSHIP_USERS_FK2 FOREIGN KEY (INVITEEID)"
-		// + "REFERENCES USERS (USERID) ON DELETE CASCADE");
-		// stmt.executeUpdate("ALTER TABLE MANIPULATION ADD CONSTRAINT MANIPULATION_RESOURCES_FK1 FOREIGN KEY (RID)"
-		// + "REFERENCES RESOURCES (RID) ON DELETE CASCADE");
-		// stmt.executeUpdate("ALTER TABLE MANIPULATION ADD CONSTRAINT MANIPULATION_USERS_FK1 FOREIGN KEY (CREATORID)"
-		// + "REFERENCES USERS (USERID) ON DELETE CASCADE");
-		// stmt.executeUpdate("ALTER TABLE MANIPULATION ADD CONSTRAINT MANIPULATION_USERS_FK2 FOREIGN KEY (MODIFIERID)"
-		// + "REFERENCES USERS (USERID) ON DELETE CASCADE");
-		// stmt.executeUpdate("ALTER TABLE RESOURCES ADD CONSTRAINT RESOURCES_USERS_FK1 FOREIGN KEY (CREATORID)"
-		// + "REFERENCES USERS (USERID) ON DELETE CASCADE");
-		// stmt.executeUpdate("ALTER TABLE RESOURCES ADD CONSTRAINT RESOURCES_USERS_FK2 FOREIGN KEY (WALLUSERID)"
-		// + "REFERENCES USERS (USERID) ON DELETE CASCADE");
-		//
-		// buildIndexes(null);
-		// } catch (SQLException e) {
-		// e.printStackTrace(System.out);
-		// } finally {
-		// if (stmt != null)
-		// try {
-		// stmt.close();
-		// } catch (SQLException e) {
-		// e.printStackTrace(System.out);
-		// }
-		// }
+		
 	}
 
 	@Override
 	public void buildIndexes(Properties props) {
-		// Statement stmt = null;
-		// try {
-		// stmt = conn.createStatement();
-		// long startIdx = System.currentTimeMillis();
-		//
-		// stmt.executeUpdate("CREATE INDEX RESOURCES_CREATORID ON RESOURCES (CREATORID)");
-		// stmt.executeUpdate("CREATE INDEX RESOURCES_WALLUSERID ON RESOURCES (WALLUSERID)");
-		// stmt.executeUpdate("CREATE INDEX FRIENDSHIP_INVITEEID ON FRIENDSHIP (INVITEEID)");
-		// stmt.executeUpdate("CREATE INDEX FRIENDSHIP_INVITERID ON FRIENDSHIP (INVITERID)");
-		// stmt.executeUpdate("CREATE INDEX FRIENDSHIP_STATUS ON FRIENDSHIP (STATUS)");
-		// stmt.executeUpdate("CREATE INDEX MANIPULATION_RID ON MANIPULATION (RID)");
-		// stmt.executeUpdate("CREATE INDEX MANIPULATION_CREATORID ON MANIPULATION (CREATORID)");
-		//
-		// long endIdx = System.currentTimeMillis();
-		// System.out.println("Time to build database index structures(ms):" +
-		// (endIdx - startIdx));
-		// } catch (Exception e) {
-		// e.printStackTrace(System.out);
-		// } finally {
-		// try {
-		// if (stmt != null)
-		// stmt.close();
-		// } catch (SQLException e) {
-		// e.printStackTrace(System.out);
-		// }
-		// }
+		
 	}
 
 	public static void dropTable(Statement st, String tableName) {
